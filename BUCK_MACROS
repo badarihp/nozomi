@@ -1,0 +1,95 @@
+# vim: set syntax=python:
+import os
+import re
+
+_common_deps = set()
+
+ROOT_SYMLINK_NAME = "root"
+
+def common_deps(*deps):
+    global _common_deps
+    _common_deps = deps
+
+def name(*names):
+    subdir = ''.join(names[:-1])
+    rulename = names[-1].replace('/', '_')
+    return '{}:{}-lib'.format(subdir, rulename)
+
+def get_system_library_dir(libname, default_type, root_dir=ROOT_SYMLINK_NAME):
+    """
+    Gets the dir for a system provided library based on .buckconfig
+
+    Arguments:
+        libname - The name of the .a file without 'lib' or '.a' 
+        default_type - The key to look for if there is no special rule for
+                       this library
+        root_dir - The dir to a symlink to '/' to get around buck only
+                    allowing relative paths
+    """
+    special_key = "sodir.lib.{}".format(libname)
+    system_key = "sodir.{}".format(default_type)
+
+    special_dir = read_config("cxx", "sodir.lib.{}".format(libname))
+    if special_dir:
+        if re.match(r'^\$sodir\.\w+$', special_dir):
+            system_key = special_dir.replace('$','')
+        else:
+            system_key = special_key
+
+    dir = read_config("cxx", system_key)
+    if dir is None:
+        raise Exception("{} was not specified".format(system_key))
+    # Buck doesn't allow absolute dirs, replace leading slashes with
+    # a symlink to /
+    return re.sub(r'^/', root_dir + '/', dir)
+
+def __system_lib(libname, lib_dir, deps=None, **kwargs):
+    exported_linker_flags = kwargs.pop(
+        'exported_linker_flags',
+        ["-ldl", "-pthread", "-latomic"],
+    )
+    prebuilt_cxx_library(
+        name=libname,
+        lib_name=libname,
+        lib_dir=lib_dir,
+        visibility=["PUBLIC"],
+        exported_linker_flags=exported_linker_flags,
+        exported_deps=deps or [],
+        **kwargs
+    )
+
+def system_lib(libname, deps=None, **kwargs):
+    lib_dir = get_system_library_dir(libname, "system")
+    return __system_lib(libname, lib_dir, deps, **kwargs)
+
+def local_lib(libname, deps=None, **kwargs):
+    lib_dir = get_system_library_dir(libname, "local")
+    return __system_lib(libname, lib_dir, deps, **kwargs)
+
+def create_root_symlink(root_dir=ROOT_SYMLINK_NAME):
+    path = os.path.join(get_base_path(), root_dir)
+    if not os.path.islink(path):
+        os.symlink("/", path)
+
+def create_lib(basename, 
+        deps=None, 
+        additional_headers=None,
+		use_common_deps=True,
+		header_only=False):
+    rule_name = name(basename).lstrip(':')
+    deps = (list(_common_deps) if use_common_deps else []) + (deps or [])
+    cxx_library(
+        name=rule_name.lstrip(':'),
+        exported_headers=["{}.h".format(basename)] + (additional_headers or []),
+        srcs=["{}.cpp".format(basename)] if not header_only else [],
+        exported_deps=deps,
+        visibility=['PUBLIC'],
+    )
+
+def create_test(basename, deps=None):
+    rule_name = name(basename).lstrip(':') 
+    cxx_test(
+        name=rule_name,
+        srcs=["{}.cpp".format(basename)],
+        deps=list(_common_deps) + (deps or []),
+    )

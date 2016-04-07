@@ -1,0 +1,21 @@
+[cxx]
+cc     = /usr/bin/clang-3.7
+cpp    = /usr/bin/clang-3.7
+aspp   = /usr/bin/clang-3.7
+cxx    = /usr/bin/clang++-3.7
+cxxpp  = /usr/bin/clang++-3.7
+ld     = /usr/bin/clang++-3.7
+cxxflags = -std=c++14 -Wextra -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -g -fno-omit-frame-pointer -O3 -pthread
+gtest_dep=//third-party/googletest/googletest:google-test
+
+sodir.system = /usr/lib/x86_64-linux-gnu
+sodir.local = /usr/local/lib
+
+[python#py3]
+interpreter = /usr/bin/python3
+
+[test]
+excluded_labels = extended
+
+[buildfile]
+includes = //BUCK_MACROS

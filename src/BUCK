@@ -1,0 +1,15 @@
+common_deps(
+    "//system:folly",
+    "//system:glog",
+    "//system:proxygenlib",
+    "//system:wangle",
+)
+
+cxx_binary(
+    name="simple-server",
+    srcs=[
+        "main.cpp",
+    ],
+    deps=[
+    ],
+)

@@ -1,0 +1,5 @@
+.buckd
+buck-out
+*.swp
+*.pyc
+system/root

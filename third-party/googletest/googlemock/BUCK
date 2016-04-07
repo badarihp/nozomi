@@ -1,0 +1,25 @@
+cxx_library(
+    name='google-mock',
+    srcs=glob(['src/**/*.cc'], excludes=['src/gmock-all.cc']),
+    header_namespace='',
+    exported_headers=subdir_glob([
+        ('', 'src/**/*.h'),
+        ('include', '**/*.h'),
+    ]),
+    deps=[
+        ':pthread',
+        '//third-party/googletest/googletest:google-test',
+    ],
+    visibility=[
+        'PUBLIC',
+    ],
+)
+
+prebuilt_cxx_library(
+    name='pthread',
+    header_only=True,
+    exported_linker_flags=['-lpthread'],
+    visibility=[
+        'PUBLIC',
+    ],
+)

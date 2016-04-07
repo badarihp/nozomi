@@ -1,0 +1,41 @@
+create_root_symlink()
+
+local_lib("boost_context")
+local_lib("boost_filesystem", [":boost_system"])
+local_lib("boost_regex")
+local_lib("boost_system")
+local_lib("double-conversion")
+local_lib("gflags")
+local_lib("glog")
+local_lib("gtest")
+system_lib("crypto")
+system_lib("event")
+system_lib("lzma")
+system_lib("ssl")
+system_lib("unwind")
+system_lib("z")
+
+local_lib("wangle", [":folly"])
+local_lib("proxygenlib", [":folly", ":wangle"])
+local_lib("folly", 
+    [
+        ":boost_context",
+        ":boost_regex",
+        ":crypto",
+        ":double-conversion",
+        ":event",
+        ":glog",
+        ":gflags",
+        ":lzma",
+        ":ssl",
+        #":unwind",
+        ":z",
+    ],
+    exported_linker_flags=[
+        "-lpthread",
+        "-lstdc++",
+        "-ldl",
+        "-lunwind",
+    ],
+
+)
