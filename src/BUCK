@@ -12,7 +12,10 @@ create_lib("Route",
         name("HTTPResponse"),
         name("HTTPRequest")
     ],
-    additional_headers=["Route-inl.h"],
+    additional_headers=[
+        "Route-inl.h",
+        "EnumHash.h",
+    ],
 )
 create_lib("Router", [name("Route")])
 

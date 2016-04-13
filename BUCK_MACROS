@@ -46,7 +46,7 @@ def get_system_library_dir(libname, default_type, root_dir=ROOT_SYMLINK_NAME):
 def __system_lib(libname, lib_dir, deps=None, **kwargs):
     exported_linker_flags = kwargs.pop(
         'exported_linker_flags',
-        ["-ldl", "-pthread", "-latomic"],
+        ["-ldl", "-pthread", "-latomic", "-lstdc++"],
     )
     prebuilt_cxx_library(
         name=libname,

@@ -1,0 +1,9 @@
+common_deps(
+    "//system:folly",
+    "//system:glog",
+    "//system:gtest",
+    "//system:proxygenlib",
+    "//system:wangle",
+)
+
+create_test("RouteTest", [name("//src", "Route")])

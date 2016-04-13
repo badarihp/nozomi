@@ -14,12 +14,34 @@ namespace sakura {
 
 using Replacement = std::pair<std::string, std::string>;
 
+std::string to_string(RouteParamType param) {
+  switch(param) {
+    case(RouteParamType::Int64):
+      return "Int64";
+    case(RouteParamType::Double):
+      return "Double";
+    case(RouteParamType::String):
+      return "String";
+    case(RouteParamType::OptionalInt64):
+      return "OptionalInt64";
+    case(RouteParamType::OptionalDouble):
+      return "OptionalDouble";
+    case(RouteParamType::OptionalString):
+      return "OptionalString";
+  }
+}
+
+std::ostream& operator<<(std::ostream& out, RouteParamType param) {
+  out << to_string(param);
+  return out;
+}
+
 template <typename T>
 Replacement routeReplacement(int paramCount,
                              string originalPattern,
                              const string& value);
 template <>
-Replacement routeReplacement<int>(int paramCount,
+Replacement routeReplacement<int64_t>(int paramCount,
                                   string originalPattern,
                                   const string& value) {
   return std::make_pair(std::move(originalPattern),
@@ -31,11 +53,11 @@ Replacement routeReplacement<double>(int paramCount,
                                      string originalPattern,
                                      const string& value) {
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]\d+(?:\.\d+)))", paramCount));
+                        sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?))", paramCount));
 }
 
 template <>
-Replacement routeReplacement<Optional<int>>(int paramCount,
+Replacement routeReplacement<Optional<int64_t>>(int paramCount,
                                             string originalPattern,
                                             const string& value) {
   return std::make_pair(std::move(originalPattern),
@@ -47,7 +69,7 @@ Replacement routeReplacement<Optional<double>>(int paramCount,
                                                string originalPattern,
                                                const string& value) {
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]\d+(?:\.\d+))?)", paramCount));
+                        sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?)?)", paramCount));
 }
 
 template <>
@@ -79,7 +101,7 @@ pair<string, vector<RouteParamType>> parseRoute(const string& route) {
       R"((?<optional_int>\{\{i\?\}\})|)"
       R"((?<optional_double>\{\{d\?\}\})|)"
       R"((?<string>\{\{s:(?<string_regex>.+?)\}\})|)"
-      R"((?<optional_string>\{\{s:(<optional_string_regex>.+?)\}\}))";
+      R"((?<optional_string>\{\{s\?:(?<optional_string_regex>.+?)\}\}))";
 
   boost::basic_regex<char> re(routeParser, boost::regex::perl);
   boost::sregex_iterator re_begin(route.cbegin(), route.cend(), re);
@@ -91,10 +113,10 @@ pair<string, vector<RouteParamType>> parseRoute(const string& route) {
     auto& match = *match_it;
     if (match["int"].matched) {
       replacements.emplace_back(
-          routeReplacement<int>(replacements.size(), match["int"].str(), ""));
+          routeReplacement<int64_t>(replacements.size(), match["int"].str(), ""));
       types.push_back(RouteParamType::Int64);
     } else if (match["optional_int"].matched) {
-      replacements.emplace_back(routeReplacement<Optional<int>>(
+      replacements.emplace_back(routeReplacement<Optional<int64_t>>(
           replacements.size(), match["optional_int"].str(), ""));
       types.push_back(RouteParamType::OptionalInt64);
     } else if (match["double"].matched) {
@@ -126,6 +148,10 @@ pair<string, vector<RouteParamType>> parseRoute(const string& route) {
   }
 
   return std::make_pair(std::move(finalRoute), std::move(types));
+}
+
+RouteMatch BaseRoute::action(const HTTPRequest& request) {
+  return action_(request);
 }
 
 }
