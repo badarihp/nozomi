@@ -3,6 +3,7 @@
 using std::string;
 using std::pair;
 using std::vector;
+using boost::basic_regex;
 
 #include <folly/Format.h>
 #include <folly/Optional.h>
@@ -39,11 +40,11 @@ std::ostream& operator<<(std::ostream& out, RouteParamType param) {
 template <typename T>
 Replacement routeReplacement(int paramCount,
                              string originalPattern,
-                             const string& value);
+                             const string&value, const string& consumed);
 template <>
 Replacement routeReplacement<int64_t>(int paramCount,
                                   string originalPattern,
-                                  const string& value) {
+                                  const string&value, const string& consumed) {
   return std::make_pair(std::move(originalPattern),
                         sformat(R"((?<__{}>[+-]?\d+))", paramCount));
 }
@@ -51,7 +52,7 @@ Replacement routeReplacement<int64_t>(int paramCount,
 template <>
 Replacement routeReplacement<double>(int paramCount,
                                      string originalPattern,
-                                     const string& value) {
+                                     const string&value, const string& consumed) {
   return std::make_pair(std::move(originalPattern),
                         sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?))", paramCount));
 }
@@ -59,25 +60,25 @@ Replacement routeReplacement<double>(int paramCount,
 template <>
 Replacement routeReplacement<Optional<int64_t>>(int paramCount,
                                             string originalPattern,
-                                            const string& value) {
+                                            const string&value, const string& consumed) {
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]?\d+)?)", paramCount));
+                        sformat(R"((?:(?<__{}>[+-]?\d+){})?)", paramCount, value));
 }
 
 template <>
 Replacement routeReplacement<Optional<double>>(int paramCount,
                                                string originalPattern,
-                                               const string& value) {
+                                               const string&value, const string& consumed) {
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?)?)", paramCount));
+                        sformat(R"((?:(?<__{}>[+-]?\d+(?:\.\d+)?){})?)", paramCount, value));
 }
 
 template <>
 Replacement routeReplacement<string>(int paramCount,
                                      string originalPattern,
-                                     const string& value) {
+                                     const string&value, const string& consumed) {
   // Ensure that the regex provided is valid
-  boost::regex re(value);
+  basic_regex<char> re(value, boost::regex::perl);
   return std::make_pair(std::move(originalPattern),
                         sformat(R"((?<__{}>{}))", paramCount, value));
 }
@@ -85,25 +86,25 @@ Replacement routeReplacement<string>(int paramCount,
 template <>
 Replacement routeReplacement<Optional<string>>(int paramCount,
                                                string originalPattern,
-                                               const string& value) {
+                                               const string&value, const string& consumed) {
   // Ensure that the regex provided is valid
-  boost::regex re(value);
+  basic_regex<char> re(value, boost::regex::perl);
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>{})?)", paramCount, value));
+                        sformat(R"((?:(?<__{}>{}){})?)", paramCount, value, consumed));
 }
 
-pair<string, vector<RouteParamType>> parseRoute(const string& route) {
+pair<basic_regex<char>, vector<RouteParamType>> parseRoute(const string& route) {
   vector<RouteParamType> types;
   string finalRoute = route;
   string routeParser =
-      R"((?<int>\{\{i\}\})|)"
-      R"((?<double>\{\{d\}\})|)"
-      R"((?<optional_int>\{\{i\?\}\})|)"
-      R"((?<optional_double>\{\{d\?\}\})|)"
+      R"((?<int>\{\{i(?::(?<int_regex>.+?))?\}\})|)"
+      R"((?<optional_int>\{\{i\?(?::(?<optional_int_regex>.+?))?\}\})|)"
+      R"((?<double>\{\{d(?::(?<double_regex>.+?))?\}\})|)"
+      R"((?<optional_double>\{\{d\?(?::(?<optional_double_regex>.+?))?\}\})|)"
       R"((?<string>\{\{s:(?<string_regex>.+?)\}\})|)"
-      R"((?<optional_string>\{\{s\?:(?<optional_string_regex>.+?)\}\}))";
+      R"((?<optional_string>\{\{s\?:(?<optional_string_regex>.+?)(?::(?<optional_string_consumed>.+?))?\}\}))";
 
-  boost::basic_regex<char> re(routeParser, boost::regex::perl);
+  basic_regex<char> re(routeParser, boost::regex::perl);
   boost::sregex_iterator re_begin(route.cbegin(), route.cend(), re);
   boost::sregex_iterator re_end;
 
@@ -113,29 +114,30 @@ pair<string, vector<RouteParamType>> parseRoute(const string& route) {
     auto& match = *match_it;
     if (match["int"].matched) {
       replacements.emplace_back(
-          routeReplacement<int64_t>(replacements.size(), match["int"].str(), ""));
+          routeReplacement<int64_t>(replacements.size(), match["int"].str(), match["int_regex"].str(), ""));
       types.push_back(RouteParamType::Int64);
     } else if (match["optional_int"].matched) {
       replacements.emplace_back(routeReplacement<Optional<int64_t>>(
-          replacements.size(), match["optional_int"].str(), ""));
+          replacements.size(), match["optional_int"].str(), match["optional_int_regex"].str(), ""));
       types.push_back(RouteParamType::OptionalInt64);
     } else if (match["double"].matched) {
       replacements.emplace_back(routeReplacement<double>(
-          replacements.size(), match["double"].str(), ""));
+          replacements.size(), match["double"].str(), match["double_regex"].str(), ""));
       types.push_back(RouteParamType::Double);
     } else if (match["optional_double"].matched) {
       replacements.emplace_back(routeReplacement<Optional<double>>(
-          replacements.size(), match["optional_double"].str(), ""));
+          replacements.size(), match["optional_double"].str(), match["optional_double_regex"].str(), ""));
       types.push_back(RouteParamType::OptionalDouble);
     } else if (match["string"].matched) {
       replacements.emplace_back(
           routeReplacement<string>(replacements.size(), match["string"].str(),
-                                   match["string_regex"].str()));
+                                   match["string_regex"].str(), ""));
       types.push_back(RouteParamType::String);
     } else if (match["optional_string"].matched) {
       replacements.emplace_back(routeReplacement<Optional<string>>(
           replacements.size(), match["optional_string"].str(),
-          match["optional_string_regex"].str()));
+          match["optional_string_regex"].str(),
+          match["optional_string_consumed"]));
       types.push_back(RouteParamType::OptionalString);
     }
   }
@@ -146,8 +148,8 @@ pair<string, vector<RouteParamType>> parseRoute(const string& route) {
       finalRoute.replace(it, replacement.first.size(), replacement.second);
     }
   }
-
-  return std::make_pair(std::move(finalRoute), std::move(types));
+  std::cout << finalRoute << std::endl;
+  return std::make_pair(basic_regex<char>(finalRoute, boost::regex::perl), std::move(types));
 }
 
 RouteMatch BaseRoute::action(const HTTPRequest& request) {

@@ -24,6 +24,7 @@ class Router {
       std::initializer_list<std::unique_ptr<BaseRoute>> routes,
       std::initializer_list<std::pair<int, std::unique_ptr<BaseRoute>>> errorRoutes);
     //TODO: Streaming
+    //TODO: Option to automatically append a trailing slash
 };
 
 }

@@ -25,7 +25,7 @@ enum class RouteParamType {
 std::string to_string(RouteParamType param);
 std::ostream& operator<<(std::ostream& out, RouteParamType param);
 
-std::pair<std::string, std::vector<RouteParamType>> parseRoute(
+std::pair<boost::basic_regex<char>, std::vector<RouteParamType>> parseRoute(
     const std::string& route);
 
 // Get the mapping from int, string, etc to RouteParamType
