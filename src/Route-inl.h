@@ -123,21 +123,21 @@ inline T get_handler_args(const boost::smatch& matches) {
   return get_handler_args<T>(N, matches);
 }
 
-template <typename... ActionArgs, std::size_t... N>
+template <typename... HandlerArgs, std::size_t... N>
 inline HTTPResponse call_handler(
     std::index_sequence<N...>,
-    const std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)>& f,
+    const std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)>& f,
     const HTTPRequest& request,
     const boost::smatch& matches) {
-  return f(request, get_handler_args<N, ActionArgs>(matches)...);
+  return f(request, get_handler_args<N, HandlerArgs>(matches)...);
 }
 
-template <typename... ActionArgs>
+template <typename... HandlerArgs>
 inline HTTPResponse call_handler(
-    const std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)>& f,
+    const std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)>& f,
     const HTTPRequest& request,
     const boost::smatch& matches) {
-  return call_handler(std::index_sequence_for<ActionArgs...>{}, f, request,
+  return call_handler(std::index_sequence_for<HandlerArgs...>{}, f, request,
                       matches);
 }
 
@@ -165,11 +165,11 @@ parse_route_pattern(const std::string& route);
 
 }  // end namespace route
 
-template <typename... ActionArgs>
-Route<ActionArgs...>::Route(
+template <typename... HandlerArgs>
+Route<HandlerArgs...>::Route(
     std::string pattern,
     std::unordered_set<std::string> methods,
-    std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> handler)
+    std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler)
     : BaseRoute(std::move(pattern), std::move(methods), false) {
   auto regexAndPatternParams = route::parse_route_pattern(originalPattern_);
   auto functionParams = route::parse_function_parameters(handler);

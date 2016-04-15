@@ -5,6 +5,7 @@ common_deps(
     "//system:wangle",
 )
 
+create_lib("Util", header_only=True)
 create_lib("HTTPRequest")
 create_lib("HTTPResponse")
 create_lib("Route", 
@@ -17,7 +18,7 @@ create_lib("Route",
         "EnumHash.h",
     ],
 )
-create_lib("Router", [name("Route")])
+create_lib("Router", [name("Route"), name("Util")])
 
 cxx_library(
     name="sakura-lib", 

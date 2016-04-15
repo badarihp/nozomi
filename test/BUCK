@@ -7,3 +7,4 @@ common_deps(
 )
 
 create_test("RouteTest", [name("//src", "Route")])
+create_test("RouterTest", [name("//src", "Router")])

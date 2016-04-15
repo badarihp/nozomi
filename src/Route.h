@@ -48,11 +48,12 @@ class BaseRoute {
         isStaticRoute_(isStaticRoute) {}
 
  public:
+  virtual ~BaseRoute() {};
   RouteMatch handler(const HTTPRequest& request);
   inline bool isStaticRoute() { return isStaticRoute_; }
 };
 
-template <typename... ActionArgs>
+template <typename... HandlerArgs>
 class Route : public virtual BaseRoute {
   // TODO: Streaming caller
  private:
@@ -61,15 +62,15 @@ class Route : public virtual BaseRoute {
  public:
   Route(std::string pattern,
         std::unordered_set<std::string> methods,
-        std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> handler);
+        std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler);
 };
 
-template <typename... ActionArgs>
-inline Route<ActionArgs...> make_route(
+template <typename... HandlerArgs>
+inline std::unique_ptr<Route<HandlerArgs...>> make_route(
     std::string pattern,
     std::unordered_set<std::string> methods,
-    std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> handler) {
-  return Route<ActionArgs...>(std::move(pattern), std::move(methods),
+    std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler) {
+  return std::make_unique<Route<HandlerArgs...>>(std::move(pattern), std::move(methods),
                               std::move(handler));
 }
 
@@ -81,11 +82,11 @@ class StaticRoute : public virtual BaseRoute {
               std::function<HTTPResponse(const HTTPRequest& request)> handler);
 };
 
-inline StaticRoute make_static_route(
+inline std::unique_ptr<BaseRoute> make_static_route(
     std::string pattern,
     std::unordered_set<std::string> methods,
     std::function<HTTPResponse(const HTTPRequest& request)> handler) {
-  return StaticRoute(std::move(pattern), std::move(methods),
+  return std::make_unique<StaticRoute>(std::move(pattern), std::move(methods),
                      std::move(handler));
 }
 }
