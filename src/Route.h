@@ -13,106 +13,80 @@
 
 namespace sakura {
 
-enum class RouteParamType {
-  Int64,
-  Double,
-  String,
-  OptionalInt64,
-  OptionalDouble,
-  OptionalString,
+enum RouteMatchResult {
+  PathNotMatched,    // Path didn't match
+  MethodNotMatched,  // Path matched, method didn't
+  RouteMatched,      // The route matched entirely
 };
 
-std::string to_string(RouteParamType param);
-std::ostream& operator<<(std::ostream& out, RouteParamType param);
-
-std::pair<boost::basic_regex<char>, std::vector<RouteParamType>> parseRoute(
-    const std::string& route);
-
-// Get the mapping from int, string, etc to RouteParamType
-template <typename T>
-inline RouteParamType to_RouteParamType();
-
-template <typename... Args>
-inline typename std::enable_if<sizeof...(Args) == 0, void>::type
-parseParameters(std::vector<RouteParamType>& params) {}
-
-template <typename Arg1, typename... Args>
-inline void parseParameters(std::vector<RouteParamType>& params) {
-  params.push_back(to_RouteParamType<Arg1>());
-  parseParameters<Args...>(params);
-}
-
-template <typename... Args>
-std::vector<RouteParamType> parseParameters(
-    const std::function<HTTPResponse(const HTTPRequest&, Args...)>& f) {
-  std::vector<RouteParamType> params;
-  params.reserve(sizeof...(Args));
-  parseParameters<Args...>(params);
-  return params;
-}
-
+/*
+ * Determines whether a Route matches a given pattern, and if not,
+ * why it doesn't
+ */
 struct RouteMatch {
- private:
-  RouteMatch(bool matchedPath,
-             bool methodAllowed,
-             std::function<HTTPResponse(const HTTPRequest&)> action)
-      : matchedPath(matchedPath),
-        methodAllowed(methodAllowed),
-        action(std::move(action)) {}
+  RouteMatch(RouteMatchResult result,
+             std::function<HTTPResponse(const HTTPRequest&)> handler =
+                 std::function<HTTPResponse(const HTTPRequest&)>())
+      : result(result), handler(std::move(handler)) {}
 
- public:
-  const bool matchedPath;
-  const bool methodAllowed;
-  const std::function<HTTPResponse(const HTTPRequest&)> action;
-  inline static RouteMatch pathNotMatched() {
-    return RouteMatch(false, false,
-                      std::function<HTTPResponse(const HTTPRequest&)>());
-  }
-  inline static RouteMatch methodNotMatched() {
-    return RouteMatch(true, false,
-                      std::function<HTTPResponse(const HTTPRequest&)>());
-  }
-  inline static RouteMatch pathMatched(
-      std::function<HTTPResponse(const HTTPRequest&)> f) {
-    return RouteMatch(true, true, std::move(f));
-  }
+  const RouteMatchResult result;
+  const std::function<HTTPResponse(const HTTPRequest&)> handler;
 };
 
 class BaseRoute {
  protected:
-  std::function<RouteMatch(const HTTPRequest&)> action_;
+  std::string originalPattern_;
+  std::unordered_set<std::string> methods_;
+  bool isStaticRoute_;
+  std::function<RouteMatch(const HTTPRequest&)> handler_;
+
+  BaseRoute(std::string originalPattern,
+            std::unordered_set<std::string> methods,
+            bool isStaticRoute)
+      : originalPattern_(std::move(originalPattern)),
+        methods_(std::move(methods)),
+        isStaticRoute_(isStaticRoute) {}
 
  public:
-  RouteMatch action(const HTTPRequest& request);
+  RouteMatch handler(const HTTPRequest& request);
+  inline bool isStaticRoute() { return isStaticRoute_; }
 };
 
 template <typename... ActionArgs>
 class Route : public virtual BaseRoute {
-  // TODO: This is going to get much more complicated with some cool template
-  // magic
   // TODO: Streaming caller
-  // TODO: Constructor takes multiple HTTP Methods
  private:
-  std::unordered_set<std::string> methods_;
-  std::string originalPattern_;
-  bool isStaticRoute_;
   boost::basic_regex<char> regex_;
 
  public:
-  // Route(std::string path, std::unordered_set<std::string> methods,
-  // std::function<HTTPResponse(HTTPRequest)> action, bool isStatic = true);
-  Route(std::string path,
+  Route(std::string pattern,
         std::unordered_set<std::string> methods,
-        std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> action);
+        std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> handler);
 };
 
 template <typename... ActionArgs>
 inline Route<ActionArgs...> make_route(
-    std::string path,
+    std::string pattern,
     std::unordered_set<std::string> methods,
-    std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> action) {
-  return Route<ActionArgs...>(std::move(path), std::move(methods),
-                              std::move(action));
+    std::function<HTTPResponse(const HTTPRequest&, ActionArgs...)> handler) {
+  return Route<ActionArgs...>(std::move(pattern), std::move(methods),
+                              std::move(handler));
+}
+
+class StaticRoute : public virtual BaseRoute {
+  // TODO: Streaming caller
+ public:
+  StaticRoute(std::string pattern,
+              std::unordered_set<std::string> methods,
+              std::function<HTTPResponse(const HTTPRequest& request)> handler);
+};
+
+inline StaticRoute make_static_route(
+    std::string pattern,
+    std::unordered_set<std::string> methods,
+    std::function<HTTPResponse(const HTTPRequest& request)> handler) {
+  return StaticRoute(std::move(pattern), std::move(methods),
+                     std::move(handler));
 }
 }
 
