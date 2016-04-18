@@ -3,8 +3,6 @@
 #include <folly/Conv.h>
 #include <folly/Format.h>
 
-#include <iostream>
-
 namespace sakura {
 namespace route {
 
@@ -54,10 +52,10 @@ inline RouteParamType to_RouteParamType<folly::Optional<std::string>>() {
 }
 
 template <typename T>
-inline T get_handler_args(int N, const boost::smatch& matches);
+inline T get_handler_args(int N,  const boost::smatch& matches);
 
 template <>
-inline int64_t get_handler_args<int64_t>(int N, const boost::smatch& matches) {
+inline int64_t get_handler_args<int64_t>(int N,  const boost::smatch& matches) {
   // TODO: There is probably a way to make all of these sformat("__{}", N)
   //        calls constexpr
   try {
@@ -69,19 +67,19 @@ inline int64_t get_handler_args<int64_t>(int N, const boost::smatch& matches) {
 }
 
 template <>
-inline double get_handler_args<double>(int N, const boost::smatch& matches) {
+inline double get_handler_args<double>(int N,  const boost::smatch& matches) {
   return folly::to<double>(matches[folly::sformat("__{}", N)].str());
 }
 
 template <>
-inline std::string get_handler_args<std::string>(int N,
+inline std::string get_handler_args<std::string>(int N, 
                                                  const boost::smatch& matches) {
   return matches[folly::sformat("__{}", N)].str();
 }
 
 template <>
 inline folly::Optional<int64_t> get_handler_args<folly::Optional<int64_t>>(
-    int N, const boost::smatch& matches) {
+    int N,  const boost::smatch& matches) {
   folly::Optional<int64_t> ret;
   const auto& match = matches[folly::sformat("__{}", N)];
   if (match.matched) {
@@ -97,7 +95,7 @@ inline folly::Optional<int64_t> get_handler_args<folly::Optional<int64_t>>(
 
 template <>
 inline folly::Optional<double> get_handler_args<folly::Optional<double>>(
-    int N, const boost::smatch& matches) {
+    int N,  const boost::smatch& matches) {
   folly::Optional<double> ret;
   const auto& match = matches[folly::sformat("__{}", N)];
   if (match.matched) {
@@ -108,7 +106,7 @@ inline folly::Optional<double> get_handler_args<folly::Optional<double>>(
 
 template <>
 inline folly::Optional<std::string>
-get_handler_args<folly::Optional<std::string>>(int N,
+get_handler_args<folly::Optional<std::string>>(int N, 
                                                const boost::smatch& matches) {
   folly::Optional<std::string> ret;
   const auto& match = matches[folly::sformat("__{}", N)];
@@ -166,11 +164,36 @@ parse_route_pattern(const std::string& route);
 }  // end namespace route
 
 template <typename... HandlerArgs>
+RouteMatch Route<HandlerArgs...>::handler(std::shared_ptr<const HTTPRequest>& request) {
+    //This takes a unique_ptr to a request because the regex matches object
+    //has an underlying reference to the path string. An std::move of the original
+    //string into the lambda doesn't guarantee that the reference inside of the
+    //regex matches is valid afterwards and might lead to UB. Instead, if
+    //we match, we move out of the original request into the lambda that we return
+    boost::smatch matches;
+    const auto& path = request->getPath();
+    if (!boost::regex_match(path, matches, regex_)) {
+      return RouteMatch(RouteMatchResult::PathNotMatched);
+    }
+    if (methods_.find(request->getMethod()) == methods_.end()) {
+      return RouteMatch(RouteMatchResult::MethodNotMatched);
+    }
+
+    return RouteMatch(RouteMatchResult::RouteMatched,
+                      std::function<HTTPResponse()>([
+                        request = std::move(request),
+                        matches = std::move(matches), this
+                      ]() {
+                        return route::call_handler(handler_, *request, matches);
+                      }));
+}
+
+template <typename... HandlerArgs>
 Route<HandlerArgs...>::Route(
     std::string pattern,
-    std::unordered_set<std::string> methods,
+    std::unordered_set<proxygen::HTTPMethod> methods,
     std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler)
-    : BaseRoute(std::move(pattern), std::move(methods), false) {
+    : BaseRoute(std::move(pattern), std::move(methods), false), handler_(std::move(handler)) {
   auto regexAndPatternParams = route::parse_route_pattern(originalPattern_);
   auto functionParams = route::parse_function_parameters(handler);
   const auto& patternParams = regexAndPatternParams.second;
@@ -199,23 +222,5 @@ Route<HandlerArgs...>::Route(
     }
   }
 
-  handler_ =
-      [ handler = std::move(handler), this ](const HTTPRequest& request) {
-    boost::smatch matches;
-    const auto& path = request.getPath();
-    if (!boost::regex_match(path, matches, regex_)) {
-      return RouteMatch(RouteMatchResult::PathNotMatched);
-    }
-    if (methods_.find(request.getMethod()) == methods_.end()) {
-      return RouteMatch(RouteMatchResult::MethodNotMatched);
-    }
-
-    return RouteMatch(RouteMatchResult::RouteMatched,
-                      std::function<HTTPResponse(HTTPRequest)>([
-                        matches = std::move(matches), &handler
-                      ](const HTTPRequest& request) {
-                        return route::call_handler(handler, request, matches);
-                      }));
-  };
 }
 }

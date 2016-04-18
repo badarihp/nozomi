@@ -6,5 +6,6 @@ common_deps(
     "//system:wangle",
 )
 
+create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
 create_test("RouteTest", [name("//src", "Route")])
 create_test("RouterTest", [name("//src", "Router")])

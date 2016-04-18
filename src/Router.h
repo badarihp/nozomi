@@ -16,7 +16,6 @@ namespace sakura {
 
 class Router {
  private:
-  // list of (route, method -> Route)
   std::list<std::unique_ptr<BaseRoute>> staticRoutes_;
   std::list<std::unique_ptr<BaseRoute>> routes_;
   std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
@@ -24,26 +23,16 @@ class Router {
 
  public:
   Router(
-      std::vector<std::unique_ptr<BaseRoute>> routes,
       std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
-          errorRoutes);
-  std::function<HTTPResponse(const HTTPRequest&)> getHandler(
-      const HTTPRequest& request);
-  std::function<HTTPResponse(const HTTPRequest&)> getErrorHandler(
-      int statusCode);
+          errorRoutes,
+      std::vector<std::unique_ptr<BaseRoute>> routes);
+  std::function<HTTPResponse()> getHandler(
+      std::shared_ptr<const HTTPRequest>& request);
+  std::function<HTTPResponse()> getErrorHandler(
+      std::shared_ptr<const HTTPRequest>& request, int statusCode);
   // TODO: Streaming
   // TODO: Option to automatically append a trailing slash
 };
-
-inline void push_routes(std::vector<std::unique_ptr<BaseRoute>>& routes) {}
-
-template <typename Route, typename... Routes>
-inline void push_routes(std::vector<std::unique_ptr<BaseRoute>>& routes,
-                        Route&& route,
-                        Routes&&... remainingRoutes) {
-  routes.push_back(std::move(route));
-  push_routes(routes, std::move(remainingRoutes)...);
-}
 
 template <typename... Routes>
 Router make_router(
@@ -53,6 +42,6 @@ Router make_router(
   std::vector<std::unique_ptr<BaseRoute>> newRoutes;
   newRoutes.reserve(sizeof...(Routes));
   push_back_move(newRoutes, std::move(routes)...);
-  return Router(std::move(newRoutes), std::move(errorRoutes));
+  return Router(std::move(errorRoutes), std::move(newRoutes));
 }
 }

@@ -1,5 +1,6 @@
 #include "src/Route.h"
 
+#include <folly/gen/Base.h>
 #include <folly/Format.h>
 #include <folly/Optional.h>
 #include <stdexcept>
@@ -7,6 +8,7 @@
 using boost::basic_regex;
 using folly::Optional;
 using folly::sformat;
+using proxygen::HTTPMethod;
 using std::function;
 using std::pair;
 using std::runtime_error;
@@ -18,26 +20,21 @@ namespace sakura {
 
 StaticRoute::StaticRoute(
     string pattern,
-    unordered_set<string> methods,
+    unordered_set<HTTPMethod> methods,
     function<HTTPResponse(const HTTPRequest& request)> handler)
-    : BaseRoute(std::move(pattern), std::move(methods), true) {
-  handler_ =
-      [ handler = std::move(handler), this ](const HTTPRequest& request) {
-    if (request.getPath() != originalPattern_) {
+    : BaseRoute(std::move(pattern), std::move(methods), true), handler_(std::move(handler)) {
+}
+
+RouteMatch StaticRoute::handler(std::shared_ptr<const HTTPRequest>& request) {
+    if (request->getPath() != originalPattern_) {
       return RouteMatch(RouteMatchResult::PathNotMatched);
     }
-    if (methods_.find(request.getMethod()) == methods_.end()) {
+    if (methods_.find(request->getMethod()) == methods_.end()) {
       return RouteMatch(RouteMatchResult::MethodNotMatched);
     }
     return RouteMatch(
         RouteMatchResult::RouteMatched,
-        std::function<HTTPResponse(const HTTPRequest&)>([&handler, this](
-            const HTTPRequest& request) { return handler(request); }));
-  };
-}
-
-RouteMatch BaseRoute::handler(const HTTPRequest& request) {
-  return handler_(request);
+        std::function<HTTPResponse()>([request = std::move(request), this]() { return handler_(*request); }));
 }
 
 namespace route {

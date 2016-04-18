@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <folly/Optional.h>
+#include <proxygen/lib/http/HTTPMethod.h>
 
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
@@ -8,34 +9,48 @@
 
 using namespace std;
 using folly::Optional;
+using proxygen::HTTPMethod;
 
 namespace sakura {
 namespace test {
 
+shared_ptr<const HTTPRequest> make_request(
+    string path,
+    HTTPMethod method,
+    unique_ptr<folly::IOBuf> body = folly::IOBuf::create(0)) {
+  proxygen::HTTPMessage headers;
+  headers.setURL(path);
+  headers.setMethod(method);
+  return std::make_shared<const HTTPRequest>(std::move(headers),
+                                             std::move(body));
+}
+
 TEST(RouteTest, fails_if_path_has_different_number_of_args_than_func) {
   std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f1;
   std::function<HTTPResponse(const HTTPRequest&)> f2;
-  ASSERT_THROW({ auto r = make_route("/{{i}}", {"GET"}, f1); },
+  ASSERT_THROW({ auto r = make_route("/{{i}}", {HTTPMethod::GET}, f1); },
                std::runtime_error);
-  ASSERT_THROW({ auto r = make_route("/{{i}}/{{i}}/{{i}}", {"GET"}, f1); },
+  ASSERT_THROW(
+      { auto r = make_route("/{{i}}/{{i}}/{{i}}", {HTTPMethod::GET}, f1); },
+      std::runtime_error);
+  ASSERT_THROW({ auto r = make_route("/", {HTTPMethod::GET}, f1); },
                std::runtime_error);
-  ASSERT_THROW({ auto r = make_route("/", {"GET"}, f1); }, std::runtime_error);
-  ASSERT_THROW({ auto r = make_route("/{{i}}", {"GET"}, f2); },
+  ASSERT_THROW({ auto r = make_route("/{{i}}", {HTTPMethod::GET}, f2); },
                std::runtime_error);
 }
 
 TEST(RouteTest, fails_if_path_has_different_args_than_func) {
   std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f;
-  ASSERT_THROW({ auto r = make_route("/{{i}}/{{d}}", {"GET"}, f); },
+  ASSERT_THROW({ auto r = make_route("/{{i}}/{{d}}", {HTTPMethod::GET}, f); },
                std::runtime_error);
 }
 
 template <typename... Args>
 void testRouteDoesntMatch(string requestPath, string pattern) {
-  HTTPRequest request(requestPath, "GET");
-  std::function<HTTPResponse(const HTTPRequest&, Args...)> f(
-      [](const HTTPRequest& request, Args... args) { return HTTPResponse(200); });
-  auto r = make_route(pattern, {"GET"}, f);
+  auto request = make_request(requestPath, HTTPMethod::GET);
+  std::function<HTTPResponse(const HTTPRequest&, Args...)> f([](
+      const HTTPRequest& request, Args... args) { return HTTPResponse(200); });
+  auto r = make_route(pattern, {HTTPMethod::GET}, f);
 
   auto match = r->handler(request);
 
@@ -57,9 +72,9 @@ TEST(RouteTest, returns_empty_function_if_pattern_doesnt_match) {
 }
 
 TEST(RouteTest, returns_invalid_method_if_pattern_matches_and_methods_dont) {
-  HTTPRequest request("/1234/1234", "PUT");
+  auto request = make_request("/1234/1234", HTTPMethod::PUT);
   std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f;
-  auto r = make_route("/{{i}}/{{i}}", {"GET", "POST"}, f);
+  auto r = make_route("/{{i}}/{{i}}", {HTTPMethod::GET, HTTPMethod::POST}, f);
   auto match = r->handler(request);
 
   ASSERT_EQ(RouteMatchResult::MethodNotMatched, match.result);
@@ -72,7 +87,7 @@ void testRouteMatching(string requestPath,
                        tuple<Args...> expected) {
   std::tuple<Args...> result;
   bool ranFunction = false;
-  HTTPRequest request(requestPath, "GET");
+  auto request = make_request(requestPath, HTTPMethod::GET);
   std::function<HTTPResponse(const HTTPRequest&, Args...)> f = [&result,
                                                                 &ranFunction](
       const HTTPRequest& request, Args... args) mutable {
@@ -81,15 +96,15 @@ void testRouteMatching(string requestPath,
     return HTTPResponse(200);
   };
 
-  auto route = make_route(pattern, {"GET"}, f);
+  auto route = make_route(pattern, {HTTPMethod::GET}, f);
   auto match = route->handler(request);
 
-  ASSERT_EQ(RouteMatchResult::RouteMatched, match.result) << "Request path: " << requestPath
-                                 << " pattern: " << pattern;
+  ASSERT_EQ(RouteMatchResult::RouteMatched, match.result)
+      << "Request path: " << requestPath << " pattern: " << pattern;
   ASSERT_TRUE((bool)match.handler) << "Request path: " << requestPath
-                                  << " pattern: " << pattern;
+                                   << " pattern: " << pattern;
 
-  match.handler(request);
+  match.handler();
   ASSERT_TRUE(ranFunction) << "Request path: " << requestPath
                            << " pattern: " << pattern;
   ASSERT_EQ(expected, result) << "Request path: " << requestPath
@@ -191,44 +206,44 @@ TEST(RouteTest, overflow_is_handled) {
         return HTTPResponse(200);
       });
 
-  HTTPRequest request1("/1777777777777777777777", "GET");
-  HTTPRequest request2("/-1777777777777777777777", "GET");
-  HTTPRequest request3("/1" + std::to_string(numeric_limits<double>::max()),
-                       "GET");
-  HTTPRequest request4("/-1" + std::to_string(numeric_limits<double>::max()),
-                       "GET");
+  auto request1 = make_request("/1777777777777777777777", HTTPMethod::GET);
+  auto request2 = make_request("/-1777777777777777777777", HTTPMethod::GET);
+  auto request3 = make_request(
+      "/1" + std::to_string(numeric_limits<double>::max()), HTTPMethod::GET);
+  auto request4 = make_request(
+      "/-1" + std::to_string(numeric_limits<double>::max()), HTTPMethod::GET);
 
-  auto r_int = make_route("/{{i}}", {"GET"}, f_int);
-  auto r_double = make_route("/{{d}}", {"GET"}, f_double);
+  auto r_int = make_route("/{{i}}", {HTTPMethod::GET}, f_int);
+  auto r_double = make_route("/{{d}}", {HTTPMethod::GET}, f_double);
 
   int_result = 0;
-  r_int->handler(request1).handler(request1);
+  r_int->handler(request1).handler();
   ASSERT_EQ(int_result, numeric_limits<int64_t>::max());
 
   int_result = 0;
-  r_int->handler(request2).handler(request2);
+  r_int->handler(request2).handler();
   ASSERT_EQ(int_result, numeric_limits<int64_t>::max());
 
   double_result = 0.0;
-  r_double->handler(request3).handler(request3);
+  r_double->handler(request3).handler();
   ASSERT_EQ(double_result, numeric_limits<double>::infinity());
 
   double_result = 0.0;
-  r_double->handler(request4).handler(request4);
+  r_double->handler(request4).handler();
   ASSERT_EQ(double_result, -numeric_limits<double>::infinity());
 }
 
 TEST(RouteTest, invalid_string_regexes_fail) {
   ASSERT_THROW(
       {
-        auto r = make_route("/{{i:.+)}}", {"GET"},
+        auto r = make_route("/{{i:.+)}}", {HTTPMethod::GET},
                             std::function<HTTPResponse(const HTTPRequest&,
                                                        Optional<int64_t>)>());
       },
       std::runtime_error);
   ASSERT_THROW(
       {
-        auto r = make_route("/{{d:.+)}}", {"GET"},
+        auto r = make_route("/{{d:.+)}}", {HTTPMethod::GET},
                             std::function<HTTPResponse(const HTTPRequest&,
                                                        Optional<double>)>());
       },
@@ -236,13 +251,13 @@ TEST(RouteTest, invalid_string_regexes_fail) {
   ASSERT_THROW(
       {
         auto r = make_route(
-            "/{{s:.+)}}", {"GET"},
+            "/{{s:.+)}}", {HTTPMethod::GET},
             std::function<HTTPResponse(const HTTPRequest&, string)>());
       },
       std::runtime_error);
   ASSERT_THROW(
       {
-        auto r = make_route("/{{s?:.+)}}", {"GET"},
+        auto r = make_route("/{{s?:.+)}}", {HTTPMethod::GET},
                             std::function<HTTPResponse(const HTTPRequest&,
                                                        Optional<string>)>());
       },
@@ -250,24 +265,31 @@ TEST(RouteTest, invalid_string_regexes_fail) {
 }
 
 TEST(RouteTest, regex_routes_are_not_static) {
-  auto r = make_route("/{{i}}", {"GET"}, std::function<HTTPResponse(const HTTPRequest&, int64_t)>());
+  auto r =
+      make_route("/{{i}}", {HTTPMethod::GET},
+                 std::function<HTTPResponse(const HTTPRequest&, int64_t)>());
   ASSERT_FALSE(r->isStaticRoute());
 }
 
 TEST(RouteTest, static_routes_are_static) {
-  auto r = make_static_route("/", {"GET"}, std::function<HTTPResponse(const HTTPRequest&)>());
+  auto r = make_static_route("/", {HTTPMethod::GET},
+                             std::function<HTTPResponse(const HTTPRequest&)>());
   ASSERT_TRUE(r->isStaticRoute());
 }
 
 TEST(RouteTest, static_routes_match_exact_strings) {
   std::function<HTTPResponse(const HTTPRequest&)> f;
-  auto r1 = make_static_route("/\\w+", {"GET"}, f);
-  auto r2 = make_static_route("/testing/route", {"GET"}, f);
+  auto r1 = make_static_route("/\\w+", {HTTPMethod::GET}, f);
+  auto r2 = make_static_route("/testing/route", {HTTPMethod::GET}, f);
 
-  auto matches1 = r1->handler(HTTPRequest("/\\w+", "GET"));
-  auto matches2 = r1->handler(HTTPRequest("/blargl", "GET"));
-  auto matches3 = r2->handler(HTTPRequest("/testing/route", "GET"));
-  auto matches4 = r2->handler(HTTPRequest("/testing/route/", "GET"));
+  auto request1 = make_request("/\\w+", HTTPMethod::GET);
+  auto matches1 = r1->handler(request1);
+  auto request2 = make_request("/blargl", HTTPMethod::GET);
+  auto matches2 = r1->handler(request2);
+  auto request3 = make_request("/testing/route", HTTPMethod::GET);
+  auto matches3 = r2->handler(request3);
+  auto request4 = make_request("/testing/route/", HTTPMethod::GET);
+  auto matches4 = r2->handler(request4);
 
   ASSERT_EQ(RouteMatchResult::RouteMatched, matches1.result);
   ASSERT_EQ(RouteMatchResult::PathNotMatched, matches2.result);
@@ -277,24 +299,25 @@ TEST(RouteTest, static_routes_match_exact_strings) {
 
 TEST(RouteTest, static_routes_reject_invalid_method) {
   std::function<HTTPResponse(const HTTPRequest&)> f;
-  auto r = make_static_route("/testing", {"GET", "POST"}, f);
-  auto matches = r->handler(HTTPRequest("/testing", "PUT"));
+  auto r =
+      make_static_route("/testing", {HTTPMethod::GET, HTTPMethod::POST}, f);
+  auto request = make_request("/testing", HTTPMethod::PUT);
+auto matches = r->handler(request);
   ASSERT_EQ(RouteMatchResult::MethodNotMatched, matches.result);
 }
 
 TEST(RouteTest, static_routes_work) {
-  HTTPRequest request("/testing", "GET");
+  auto request = make_request("/testing", HTTPMethod::GET);
   string requestPath = "";
 
   std::function<HTTPResponse(const HTTPRequest&)> f(
-    [&requestPath](const HTTPRequest& request) mutable {
-      requestPath = request.getPath();
-      return HTTPResponse(200);
-    });
-  auto r = make_static_route("/testing", {"GET"}, f);
-  r->handler(request).handler(request);
-  ASSERT_EQ(requestPath, request.getPath());
+      [&requestPath](const HTTPRequest& request) mutable {
+        requestPath = request.getPath();
+        return HTTPResponse(200);
+      });
+  auto r = make_static_route("/testing", {HTTPMethod::GET}, f);
+  r->handler(request).handler();
+  ASSERT_EQ(requestPath, "/testing");
 }
-
 }
 }
