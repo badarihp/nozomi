@@ -4,8 +4,8 @@
 #include <string>
 
 #include <folly/String.h>
-#include <folly/json.h>
 #include <folly/io/IOBuf.h>
+#include <folly/json.h>
 #include <proxygen/lib/http/HTTPHeaders.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/HTTPMethod.h>
@@ -21,14 +21,16 @@ class HTTPRequest {
       if (request_.hasQueryParam(param)) {
         return request_.getDecodedQueryParam(param);
       }
-      for(const auto& kvp: request_.getQueryParams()) {
+      for (const auto& kvp : request_.getQueryParams()) {
         try {
-        auto decodedParam = folly::uriUnescape<std::string>(kvp.first, folly::UriEscapeMode::QUERY);
-        if(decodedParam == param) {
-          return folly::uriUnescape<std::string>(kvp.second, folly::UriEscapeMode::QUERY);
-        }
-        } catch(const std::exception& e) {
-          //TODO: Log
+          auto decodedParam = folly::uriUnescape<std::string>(
+              kvp.first, folly::UriEscapeMode::QUERY);
+          if (decodedParam == param) {
+            return folly::uriUnescape<std::string>(kvp.second,
+                                                   folly::UriEscapeMode::QUERY);
+          }
+        } catch (const std::exception& e) {
+          // TODO: Log
           continue;
         }
       }

@@ -145,14 +145,14 @@ TEST(HTTPRequestTest, returns_decoded_query_param_when_set) {
 TEST(HTTPRequestTest, skips_badly_encoded_params) {
   HTTPMessage message1;
   HTTPMessage message2;
-  message1.setURL("/index.php?test%GG=value");
-  message2.setURL("/index.php?test=value%GG");
+  message1.setURL("/index.php?test%=value");
+  message2.setURL("/index.php?test%20value=value%");
 
   HTTPRequest request1(std::move(message1), IOBuf::create(0));
   HTTPRequest request2(std::move(message2), IOBuf::create(0));
 
-  ASSERT_FALSE(request1.getQueryParams()["test%GG"].hasValue());
-  ASSERT_FALSE(request2.getQueryParams()["test"].hasValue());
+  ASSERT_FALSE(request1.getQueryParams()["test "].hasValue());
+  ASSERT_FALSE(request2.getQueryParams()["test value"].hasValue());
 }
 
 TEST(HTTPRequestTest, returns_empty_value_when_header_not_set) {
