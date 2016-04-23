@@ -7,5 +7,6 @@ common_deps(
 )
 
 create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
+create_test("HTTPResponseTest", [name("//src", "HTTPResponse")])
 create_test("RouteTest", [name("//src", "Route")])
 create_test("RouterTest", [name("//src", "Router")])

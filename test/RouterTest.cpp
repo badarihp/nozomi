@@ -37,11 +37,11 @@ TEST(RouterTest, checks_static_routes_first) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/{{i}}", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&, int64_t)>([](
-          const HTTPRequest& reqeust, int i) { return HTTPResponse(202); })));
+          const HTTPRequest& reqeust, int i) { return HTTPResponse(202, "202 Message"); })));
 
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::GET);
@@ -49,6 +49,7 @@ TEST(RouterTest, checks_static_routes_first) {
   auto handler = router.getHandler(request);
   auto response = handler();
   ASSERT_EQ(201, response.getStatusCode());
+ASSERT_EQ("201 Message", response.getBodyString());
 }
 
 TEST(RouterTest, returns_405_when_unsupported_method_is_found) {
@@ -56,11 +57,11 @@ TEST(RouterTest, returns_405_when_unsupported_method_is_found) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/\\d+", {HTTPMethod::GET, HTTPMethod::PUT},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(202); })));
+          [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::POST);
 
@@ -75,11 +76,11 @@ TEST(RouterTest, returns_route_when_static_405d_but_regex_route_didnt) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/\\d+", {HTTPMethod::GET, HTTPMethod::POST},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(202); })));
+          [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::POST);
 
@@ -87,6 +88,7 @@ TEST(RouterTest, returns_route_when_static_405d_but_regex_route_didnt) {
   auto response = handler();
 
   ASSERT_EQ(202, response.getStatusCode());
+ASSERT_EQ("202 Message", response.getBodyString());
 }
 
 TEST(RouterTest, returns_custom_error_handler_when_set) {
@@ -94,16 +96,16 @@ TEST(RouterTest, returns_custom_error_handler_when_set) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/\\d+", {HTTPMethod::GET, HTTPMethod::PUT},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(202); })));
+          [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
 
   Router router(
       {
-          {405, [](const auto& request) { return HTTPResponse(415); }},
-          {404, [](const auto& request) { return HTTPResponse(410); }},
+          {405, [](const auto& request) { return HTTPResponse(415, "415 Message"); }},
+          {404, [](const auto& request) { return HTTPResponse(410, "410 Message"); }},
       },
       std::move(routes) );
   auto request1 = make_request("/1", HTTPMethod::POST);
@@ -115,7 +117,9 @@ TEST(RouterTest, returns_custom_error_handler_when_set) {
   auto response2 = handler2();
 
   ASSERT_EQ(415, response1.getStatusCode());
+ASSERT_EQ("415 Message", response1.getBodyString());
   ASSERT_EQ(410, response2.getStatusCode());
+ASSERT_EQ("410 Message", response2.getBodyString());
 }
 
 TEST(RouterTest, returns_default_error_handler_when_not_set) {
@@ -123,16 +127,16 @@ TEST(RouterTest, returns_default_error_handler_when_not_set) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/\\d+", {HTTPMethod::GET, HTTPMethod::PUT},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(202); })));
+          [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
 
   Router router(
       {
-          {401, [](const auto& request) { return HTTPResponse(411); }},
-          {402, [](const auto& request) { return HTTPResponse(412); }},
+          {401, [](const auto& request) { return HTTPResponse(411, "411 Message"); }},
+          {402, [](const auto& request) { return HTTPResponse(412, "412 Message"); }},
       },
       std::move(routes));
   auto request1 = make_request("/1", HTTPMethod::POST);
@@ -152,11 +156,11 @@ TEST(RouterTest, returns_404_when_route_not_found) {
   routes.push_back(make_static_route(
       "/1", {HTTPMethod::GET},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(201); })));
+          [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })));
   routes.push_back(make_route(
       "/\\d+", {HTTPMethod::GET, HTTPMethod::PUT},
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [](const HTTPRequest& request) { return HTTPResponse(202); })));
+          [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
 
   Router router({}, std::move(routes));
   auto request = make_request("/invalid_path", HTTPMethod::GET);
@@ -169,15 +173,15 @@ TEST(RouterTest, returns_404_when_route_not_found) {
 
 TEST(RouterTest, make_router_works) {
   auto router = make_router(
-      {{404, [](const auto& request) { return HTTPResponse(414); }}},
+      {{404, [](const auto& request) { return HTTPResponse(414, "414 Message"); }}},
       make_static_route(
           "/1", {HTTPMethod::GET},
           std::function<HTTPResponse(const HTTPRequest&)>(
-              [](const HTTPRequest& request) { return HTTPResponse(201); })),
+              [](const HTTPRequest& request) { return HTTPResponse(201, "201 Message"); })),
       make_route(
           "/2", {HTTPMethod::GET},
           std::function<HTTPResponse(const HTTPRequest&)>(
-              [](const HTTPRequest& request) { return HTTPResponse(202); })));
+              [](const HTTPRequest& request) { return HTTPResponse(202, "202 Message"); })));
 
   auto request1 = make_request("/1", HTTPMethod::GET);
   auto response1 = router.getHandler(request1)();
@@ -185,7 +189,9 @@ TEST(RouterTest, make_router_works) {
   auto response2 = router.getHandler(request2)();
 
   ASSERT_EQ(201, response1.getStatusCode());
+ASSERT_EQ("201 Message", response1.getBodyString());
   ASSERT_EQ(414, response2.getStatusCode());
+ASSERT_EQ("414 Message", response2.getBodyString());
 }
 }
 }

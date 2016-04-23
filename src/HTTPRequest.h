@@ -10,6 +10,8 @@
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
+#include "src/StringUtils.h"
+
 namespace sakura {
 
 class HTTPRequest {
@@ -105,17 +107,7 @@ class HTTPRequest {
     return request_.getHeaders();
   }
   inline const proxygen::HTTPMessage& getRawRequest() const { return request_; }
-  inline std::string getBodyAsString() const {
-    std::string ret;
-    ret.reserve(body_->computeChainDataLength());
-    auto offset = 0;
-    for (const auto& buf : *body_) {
-      auto len = buf.size();
-      ret.insert(offset, reinterpret_cast<const char*>(buf.data()), len);
-      offset += len;
-    }
-    return ret;
-  }
+  inline std::string getBodyAsString() const { return to_string(body_); }
   folly::dynamic getBodyAsJson() const {
     return folly::parseJson(getBodyAsString());
   }

@@ -6,8 +6,17 @@ common_deps(
 )
 
 create_lib("Util", header_only=True)
-create_lib("HTTPRequest")
-create_lib("HTTPResponse")
+create_lib("HTTPRequest",
+    additional_headers=[
+        "StringUtils.h",
+    ],
+)
+create_lib("HTTPResponse", 
+    additional_headers=[
+        "EnumHash.h",
+        "StringUtils.h",
+    ],
+)
 create_lib("Route", 
     [
         name("HTTPResponse"),
