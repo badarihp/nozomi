@@ -6,6 +6,8 @@ common_deps(
 )
 
 create_lib("Util", header_only=True)
+create_lib("Config")
+
 create_lib("HTTPRequest",
     additional_headers=[
         "StringUtils.h",
@@ -29,13 +31,23 @@ create_lib("Route",
 )
 create_lib("Router", [name("Route"), name("Util")])
 
+create_lib("HTTPHandler", [
+    name("Config"),
+    name("Router"),
+])
+
+create_lib("HTTPHandlerFactory", [
+    name("Config"),
+    name("Router"),
+    name("HTTPHandler"),
+])
+
 cxx_library(
     name="sakura-lib", 
     srcs=[],
     headers=[],
     exported_deps=[
-        name("Route"),
-        name("Router"),
+        name("HTTPHandlerFactory"),
     ]
 )
 

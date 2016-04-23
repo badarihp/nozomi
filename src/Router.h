@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <boost/regex.hpp>
+#include <proxygen/lib/http/HTTPMessage.h>
 
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
@@ -22,14 +23,12 @@ class Router {
       errorRoutes_;
 
  public:
-  Router(
-      std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
-          errorRoutes,
-      std::vector<std::unique_ptr<BaseRoute>> routes);
-  std::function<HTTPResponse()> getHandler(
-      std::shared_ptr<const HTTPRequest>& request);
-  std::function<HTTPResponse()> getErrorHandler(
-      std::shared_ptr<const HTTPRequest>& request, int statusCode);
+  Router(std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
+             errorRoutes,
+         std::vector<std::unique_ptr<BaseRoute>> routes);
+  std::function<HTTPResponse(const HTTPRequest&)> getHandler(
+      const proxygen::HTTPMessage* request) const;
+  std::function<HTTPResponse(const HTTPRequest&)> getErrorHandler(int statusCode) const;
   // TODO: Streaming
   // TODO: Option to automatically append a trailing slash
 };

@@ -7,8 +7,7 @@ using std::unordered_map;
 namespace sakura {
 
 Router::Router(
-    unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
-        errorRoutes,
+    unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>> errorRoutes,
     vector<unique_ptr<BaseRoute>> routes)
     : errorRoutes_(std::move(errorRoutes)) {
   for (auto& route : routes) {
@@ -20,8 +19,8 @@ Router::Router(
   }
 }
 
-std::function<HTTPResponse()> Router::getHandler(
-    std::shared_ptr<const HTTPRequest>& request) {
+std::function<HTTPResponse(const HTTPRequest&)> Router::getHandler(
+    const proxygen::HTTPMessage* request) const {
   // Check static routes first, then dynamic ones
   bool methodNotFound = false;
   for (const auto& route : staticRoutes_) {
@@ -51,19 +50,22 @@ std::function<HTTPResponse()> Router::getHandler(
   }
 
   if (methodNotFound) {
-    return getErrorHandler(request, 405);
+    return getErrorHandler(405);
   } else {
-    return getErrorHandler(request, 404);
+    return getErrorHandler(404);
   }
 }
 
-std::function<HTTPResponse()> Router::getErrorHandler(
-    std::shared_ptr<const HTTPRequest>& request, int statusCode) {
+std::function<HTTPResponse(const HTTPRequest&)> Router::getErrorHandler(
+    int statusCode) const {
   auto route = errorRoutes_.find(statusCode);
   if (route == errorRoutes_.end()) {
-    return [statusCode]() { return HTTPResponse(statusCode); };
+    return
+        [statusCode](const HTTPRequest& request) { return HTTPResponse(statusCode); };
   } else {
-    return [request = std::move(request), &handler=route->second]() { return handler(*request); };
+    return [&handler = route->second](const HTTPRequest& request) {
+      return handler(request);
+    };
   }
 }
 }

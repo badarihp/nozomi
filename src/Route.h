@@ -26,12 +26,12 @@ enum RouteMatchResult {
  */
 struct RouteMatch {
   RouteMatch(RouteMatchResult result,
-             std::function<HTTPResponse()> handler =
-                 std::function<HTTPResponse()>())
+             std::function<HTTPResponse(const HTTPRequest&)> handler =
+                 std::function<HTTPResponse(const HTTPRequest&)>())
       : result(result), handler(std::move(handler)) {}
 
   const RouteMatchResult result;
-  const std::function<HTTPResponse()> handler;
+  const std::function<HTTPResponse(const HTTPRequest&)> handler;
 };
 
 class BaseRoute {
@@ -39,7 +39,7 @@ class BaseRoute {
   std::string originalPattern_;
   std::unordered_set<proxygen::HTTPMethod> methods_;
   bool isStaticRoute_;
-  //TODO: This should take a path and a method, not a request
+  // TODO: This should take a path and a method, not a request
 
   BaseRoute(std::string originalPattern,
             std::unordered_set<proxygen::HTTPMethod> methods,
@@ -49,8 +49,8 @@ class BaseRoute {
         isStaticRoute_(isStaticRoute) {}
 
  public:
-  virtual ~BaseRoute() {};
-  virtual RouteMatch handler(std::shared_ptr<const HTTPRequest>& request) = 0;
+  virtual ~BaseRoute(){};
+  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const = 0;
   inline bool isStaticRoute() { return isStaticRoute_; }
 };
 
@@ -62,10 +62,11 @@ class Route : public virtual BaseRoute {
   boost::basic_regex<char> regex_;
 
  public:
-  Route(std::string pattern,
-        std::unordered_set<proxygen::HTTPMethod> methods,
-        std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler);
-  virtual RouteMatch handler(std::shared_ptr<const HTTPRequest>& request);
+  Route(
+      std::string pattern,
+      std::unordered_set<proxygen::HTTPMethod> methods,
+      std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler);
+  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const;
 };
 
 template <typename... HandlerArgs>
@@ -73,8 +74,8 @@ inline std::unique_ptr<Route<HandlerArgs...>> make_route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
     std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler) {
-  return std::make_unique<Route<HandlerArgs...>>(std::move(pattern), std::move(methods),
-                              std::move(handler));
+  return std::make_unique<Route<HandlerArgs...>>(
+      std::move(pattern), std::move(methods), std::move(handler));
 }
 
 class StaticRoute : public virtual BaseRoute {
@@ -86,7 +87,7 @@ class StaticRoute : public virtual BaseRoute {
   StaticRoute(std::string pattern,
               std::unordered_set<proxygen::HTTPMethod> methods,
               std::function<HTTPResponse(const HTTPRequest& request)> handler);
-  virtual RouteMatch handler(std::shared_ptr<const HTTPRequest>& request);
+  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const;
 };
 
 inline std::unique_ptr<BaseRoute> make_static_route(
@@ -94,7 +95,7 @@ inline std::unique_ptr<BaseRoute> make_static_route(
     std::unordered_set<proxygen::HTTPMethod> methods,
     std::function<HTTPResponse(const HTTPRequest& request)> handler) {
   return std::make_unique<StaticRoute>(std::move(pattern), std::move(methods),
-                     std::move(handler));
+                                       std::move(handler));
 }
 }
 

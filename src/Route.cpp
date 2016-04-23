@@ -1,8 +1,11 @@
 #include "src/Route.h"
 
-#include <folly/gen/Base.h>
 #include <folly/Format.h>
 #include <folly/Optional.h>
+#include <folly/gen/Base.h>
+#include <proxygen/lib/http/HTTPMessage.h>
+#include <proxygen/lib/http/HTTPMethod.h>
+
 #include <stdexcept>
 
 using boost::basic_regex;
@@ -22,19 +25,21 @@ StaticRoute::StaticRoute(
     string pattern,
     unordered_set<HTTPMethod> methods,
     function<HTTPResponse(const HTTPRequest& request)> handler)
-    : BaseRoute(std::move(pattern), std::move(methods), true), handler_(std::move(handler)) {
-}
+    : BaseRoute(std::move(pattern), std::move(methods), true),
+      handler_(std::move(handler)) {}
 
-RouteMatch StaticRoute::handler(std::shared_ptr<const HTTPRequest>& request) {
-    if (request->getPath() != originalPattern_) {
-      return RouteMatch(RouteMatchResult::PathNotMatched);
-    }
-    if (methods_.find(request->getMethod()) == methods_.end()) {
-      return RouteMatch(RouteMatchResult::MethodNotMatched);
-    }
-    return RouteMatch(
-        RouteMatchResult::RouteMatched,
-        std::function<HTTPResponse()>([request = std::move(request), this]() { return handler_(*request); }));
+RouteMatch StaticRoute::handler(const proxygen::HTTPMessage* request) const {
+  DCHECK(request != nullptr);
+  auto methodAndPath = HTTPRequest::getMethodAndPath(request);
+  if (std::get<1>(methodAndPath) != originalPattern_) {
+    return RouteMatch(RouteMatchResult::PathNotMatched);
+  }
+  if (methods_.find(std::get<0>(methodAndPath)) == methods_.end()) {
+    return RouteMatch(RouteMatchResult::MethodNotMatched);
+  }
+  return RouteMatch(RouteMatchResult::RouteMatched,
+                    std::function<HTTPResponse(const HTTPRequest&)>([this](
+                        const HTTPRequest& request) { return handler_(request); }));
 }
 
 namespace route {

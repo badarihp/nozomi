@@ -14,15 +14,14 @@ using proxygen::HTTPMethod;
 namespace sakura {
 namespace test {
 
-shared_ptr<const HTTPRequest> make_request(
+HTTPRequest make_request(
     string path,
     HTTPMethod method,
     unique_ptr<folly::IOBuf> body = folly::IOBuf::create(0)) {
-  proxygen::HTTPMessage headers;
-  headers.setURL(path);
-  headers.setMethod(method);
-  return std::make_shared<const HTTPRequest>(std::move(headers),
-                                             std::move(body));
+  auto headers = std::make_unique<proxygen::HTTPMessage>();
+  headers->setURL(path);
+  headers->setMethod(method);
+  return HTTPRequest(std::move(headers), std::move(body));
 }
 
 TEST(RouteTest, fails_if_path_has_different_number_of_args_than_func) {
@@ -52,7 +51,7 @@ void testRouteDoesntMatch(string requestPath, string pattern) {
       const HTTPRequest& request, Args... args) { return HTTPResponse(200); });
   auto r = make_route(pattern, {HTTPMethod::GET}, f);
 
-  auto match = r->handler(request);
+  auto match = r->handler(&request.getRawRequest());
 
   ASSERT_EQ(RouteMatchResult::PathNotMatched, match.result);
   ASSERT_FALSE((bool)match.handler);
@@ -75,7 +74,7 @@ TEST(RouteTest, returns_invalid_method_if_pattern_matches_and_methods_dont) {
   auto request = make_request("/1234/1234", HTTPMethod::PUT);
   std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f;
   auto r = make_route("/{{i}}/{{i}}", {HTTPMethod::GET, HTTPMethod::POST}, f);
-  auto match = r->handler(request);
+  auto match = r->handler(&request.getRawRequest());
 
   ASSERT_EQ(RouteMatchResult::MethodNotMatched, match.result);
   ASSERT_FALSE((bool)match.handler);
@@ -97,14 +96,14 @@ void testRouteMatching(string requestPath,
   };
 
   auto route = make_route(pattern, {HTTPMethod::GET}, f);
-  auto match = route->handler(request);
+  auto match = route->handler(&request.getRawRequest());
 
   ASSERT_EQ(RouteMatchResult::RouteMatched, match.result)
       << "Request path: " << requestPath << " pattern: " << pattern;
   ASSERT_TRUE((bool)match.handler) << "Request path: " << requestPath
                                    << " pattern: " << pattern;
 
-  match.handler();
+  match.handler(std::move(request));
   ASSERT_TRUE(ranFunction) << "Request path: " << requestPath
                            << " pattern: " << pattern;
   ASSERT_EQ(expected, result) << "Request path: " << requestPath
@@ -217,19 +216,19 @@ TEST(RouteTest, overflow_is_handled) {
   auto r_double = make_route("/{{d}}", {HTTPMethod::GET}, f_double);
 
   int_result = 0;
-  r_int->handler(request1).handler();
+  r_int->handler(&request1.getRawRequest()).handler(std::move(request1));
   ASSERT_EQ(int_result, numeric_limits<int64_t>::max());
 
   int_result = 0;
-  r_int->handler(request2).handler();
+  r_int->handler(&request2.getRawRequest()).handler(std::move(request2));
   ASSERT_EQ(int_result, numeric_limits<int64_t>::max());
 
   double_result = 0.0;
-  r_double->handler(request3).handler();
+  r_double->handler(&request3.getRawRequest()).handler(std::move(request3));
   ASSERT_EQ(double_result, numeric_limits<double>::infinity());
 
   double_result = 0.0;
-  r_double->handler(request4).handler();
+  r_double->handler(&request4.getRawRequest()).handler(std::move(request4));
   ASSERT_EQ(double_result, -numeric_limits<double>::infinity());
 }
 
@@ -283,13 +282,13 @@ TEST(RouteTest, static_routes_match_exact_strings) {
   auto r2 = make_static_route("/testing/route", {HTTPMethod::GET}, f);
 
   auto request1 = make_request("/\\w+", HTTPMethod::GET);
-  auto matches1 = r1->handler(request1);
+  auto matches1 = r1->handler(&request1.getRawRequest());
   auto request2 = make_request("/blargl", HTTPMethod::GET);
-  auto matches2 = r1->handler(request2);
+  auto matches2 = r1->handler(&request2.getRawRequest());
   auto request3 = make_request("/testing/route", HTTPMethod::GET);
-  auto matches3 = r2->handler(request3);
+  auto matches3 = r2->handler(&request3.getRawRequest());
   auto request4 = make_request("/testing/route/", HTTPMethod::GET);
-  auto matches4 = r2->handler(request4);
+  auto matches4 = r2->handler(&request4.getRawRequest());
 
   ASSERT_EQ(RouteMatchResult::RouteMatched, matches1.result);
   ASSERT_EQ(RouteMatchResult::PathNotMatched, matches2.result);
@@ -302,7 +301,7 @@ TEST(RouteTest, static_routes_reject_invalid_method) {
   auto r =
       make_static_route("/testing", {HTTPMethod::GET, HTTPMethod::POST}, f);
   auto request = make_request("/testing", HTTPMethod::PUT);
-auto matches = r->handler(request);
+  auto matches = r->handler(&request.getRawRequest());
   ASSERT_EQ(RouteMatchResult::MethodNotMatched, matches.result);
 }
 
@@ -316,7 +315,7 @@ TEST(RouteTest, static_routes_work) {
         return HTTPResponse(200);
       });
   auto r = make_static_route("/testing", {HTTPMethod::GET}, f);
-  r->handler(request).handler();
+  r->handler(&request.getRawRequest()).handler(std::move(request));
   ASSERT_EQ(requestPath, "/testing");
 }
 }

@@ -45,6 +45,5 @@ TEST(HTTPResponseTest, constructors_and_getters_work) {
                   HTTPHeaderCode::HTTP_HEADER_LOCATION));
   }
 }
-
 }
 }
