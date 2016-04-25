@@ -45,6 +45,45 @@ class HTTPResponse {
   HTTPResponse(int16_t statusCode);
   HTTPResponse(int16_t statusCode, const std::string& body);
 
+  // string converts to dynamic, and I can't seem to disable conversion
+  // for specific arguments. Different names should do it, though
+  static inline HTTPResponse fromJson(
+      int16_t statusCode,
+      const folly::dynamic& body,
+      std::unordered_map<std::string, std::string> headers) {
+    return HTTPResponse(statusCode, body, std::move(headers));
+  }
+  static inline HTTPResponse fromString(
+      int16_t statusCode,
+      const std::string& body,
+      std::unordered_map<std::string, std::string> headers) {
+    return HTTPResponse(statusCode, body, std::move(headers));
+  }
+  static inline HTTPResponse fromBytes(
+      int16_t statusCode,
+      std::unique_ptr<folly::IOBuf> body,
+      std::unordered_map<std::string, std::string> headers) {
+    return HTTPResponse(statusCode, std::move(body), std::move(headers));
+  }
+  static inline HTTPResponse fromJson(
+      int16_t statusCode,
+      const folly::dynamic& body,
+      std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
+    return HTTPResponse(statusCode, body, std::move(headers));
+  }
+  static inline HTTPResponse fromString(
+      int16_t statusCode,
+      const std::string& body,
+      std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
+    return HTTPResponse(statusCode, body, std::move(headers));
+  }
+  static inline HTTPResponse fromBytes(
+      int16_t statusCode,
+      std::unique_ptr<folly::IOBuf> body,
+      std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
+    return HTTPResponse(statusCode, std::move(body), std::move(headers));
+  }
+
   inline const proxygen::HTTPMessage& getHeaders() const { return response_; }
   inline int16_t getStatusCode() const { return response_.getStatusCode(); }
   inline std::string getBodyString() const { return to_string(body_); }

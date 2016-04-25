@@ -42,12 +42,20 @@ create_lib("HTTPHandlerFactory", [
     name("HTTPHandler"),
 ])
 
+create_lib("Server", [
+    name("Config"),
+    name("Router"),
+    name("HTTPHandler"),
+    name("HTTPHandlerFactory"),
+    "//system:proxygenhttpserver",
+])
+
 cxx_library(
     name="sakura-lib", 
     srcs=[],
     headers=[],
     exported_deps=[
-        name("HTTPHandlerFactory"),
+        name("Server"),
     ]
 )
 

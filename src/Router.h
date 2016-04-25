@@ -37,6 +37,17 @@ template <typename... Routes>
 Router make_router(
     std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
         errorRoutes,
+    std::unique_ptr<Routes>... routes) {
+  std::vector<std::unique_ptr<BaseRoute>> newRoutes;
+  newRoutes.reserve(sizeof...(Routes));
+  push_back_move(newRoutes, std::move(routes)...);
+  return Router(std::move(errorRoutes), std::move(newRoutes));
+}
+
+template <typename... Routes>
+Router make_router(
+    std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
+        errorRoutes,
     Routes&&... routes) {
   std::vector<std::unique_ptr<BaseRoute>> newRoutes;
   newRoutes.reserve(sizeof...(Routes));

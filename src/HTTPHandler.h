@@ -12,17 +12,13 @@ namespace sakura {
 
 class HTTPHandler : public virtual proxygen::RequestHandler {
  private:
-  const Router& router_;
+  Router* router_;
   std::unique_ptr<proxygen::HTTPMessage> message_;
   std::unique_ptr<folly::IOBuf> body_;
   std::function<HTTPResponse(const HTTPRequest&)> handler_;
-  // Destructor is private because we delete inside of requestComplete / onError
-  // The suicide idiom is pulled from proxygen/httpserver/samples/echo/EchoServer.cpp
-  // probably to ensure that the handler gets cleaned up after the request is finished
-  virtual ~HTTPHandler() noexcept { }
 
  public:
-  HTTPHandler(const Router& router, std::function<HTTPResponse(const HTTPRequest&)> handler);
+  HTTPHandler(Router* router, std::function<HTTPResponse(const HTTPRequest&)> handler);
   void sendResponse(const HTTPResponse& response);
 
   /**
@@ -66,5 +62,7 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
    * yourself.
    */
   virtual void onError(proxygen::ProxygenError err) noexcept override;
+  
+  virtual ~HTTPHandler() noexcept { }
 };
 }

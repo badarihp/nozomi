@@ -9,7 +9,7 @@ HTTPHandlerFactory::HTTPHandlerFactory(Config config, Router router)
     : config_(std::move(config)), router_(std::move(router)) {}
 
 void HTTPHandlerFactory::onServerStart(folly::EventBase* evb) noexcept {
-  LOG(INFO) << "Started server";
+  LOG(INFO) << "Started handler factory";
 }
 
 /**
@@ -17,7 +17,7 @@ void HTTPHandlerFactory::onServerStart(folly::EventBase* evb) noexcept {
  * drained from that thread. Can be used to tear down thread-local setup.
  */
 void HTTPHandlerFactory::onServerStop() noexcept {
-  LOG(INFO) << "Stopped server";
+  LOG(INFO) << "Stopped handler factory";
 }
 
 /**
@@ -37,6 +37,6 @@ proxygen::RequestHandler* HTTPHandlerFactory::onRequest(
     proxygen::RequestHandler* previousHandler,
     proxygen::HTTPMessage* message) noexcept {
   DCHECK(message != nullptr);
-  return new HTTPHandler(router_, router_.getHandler(message));
+  return new HTTPHandler(&router_, router_.getHandler(message));
 }
 }

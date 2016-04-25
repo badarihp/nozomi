@@ -13,12 +13,13 @@ using proxygen::ResponseBuilder;
 
 namespace sakura {
 HTTPHandler::HTTPHandler(
-    const Router& router,
+    Router* router,
     std::function<HTTPResponse(const HTTPRequest&)> handler)
-    : router_(router), handler_(std::move(handler)), body_(IOBuf::create(0)) {}
+    : router_(router), handler_(std::move(handler)), body_(IOBuf::create(0)) { DCHECK(router != nullptr);
+}
 
 void HTTPHandler::sendResponse(const HTTPResponse& response) {
-  // Add headers to response if missing
+  // TODO: Add headers to response if missing
   // Yes, this copies the headers object, but I'd rather have a clean
   // response builder ATM
   auto builder = ResponseBuilder(downstream_);
@@ -34,7 +35,7 @@ void HTTPHandler::sendResponse(const HTTPResponse& response) {
 }
 
 void HTTPHandler::onRequest(std::unique_ptr<HTTPMessage> headers) noexcept {
-  DCHECK(message_ != nullptr);
+  DCHECK(message_ == nullptr);
   message_ = std::move(headers);
 };
 
@@ -59,27 +60,17 @@ void HTTPHandler::onEOM() noexcept {
   // TODO: This request probably needs to be a shared_ptr instead
   //      when I get to the point that I have futures. Async gets
   //      tricky with just references
-  // TODO: Send router through so we can do error handling
-  // TODO: catch exceptions
-  // TODO: Send response
   auto request = HTTPRequest(std::move(message_), std::move(body_));
   try {
     sendResponse(handler_(std::move(request)));
   } catch (const std::exception& e) {
     try {
-      sendResponse(router_.getErrorHandler(500)(request));
+      LOG(INFO) << "Error: " << e.what();
+      sendResponse(router_->getErrorHandler(500)(request));
     } catch (const std::exception& e) {
       sendResponse(HTTPResponse(500, "Unknown error"));
     }
   }
-  /*
-    ResponseBuilder(downstream_)
-      .status(200, "OK")
-      .header("Request-Number",
-              folly::to<std::string>(stats_->getRequestCount()))
-      .body(std::move(body_))
-      .sendWithEOM();
-  */
 };
 
 /**
@@ -90,6 +81,8 @@ void HTTPHandler::onEOM() noexcept {
  * received, `downstream_` should be considered invalid.
  */
 void HTTPHandler::requestComplete() noexcept {
+  //TODO: When moved to futures, the delete needs to be conditional
+  //      on whether the response has been sent
   delete this;
 };
 
@@ -103,6 +96,8 @@ void HTTPHandler::requestComplete() noexcept {
  * yourself.
  */
 void HTTPHandler::onError(ProxygenError err) noexcept {
+  //TODO: When moved to futures, the delete needs to be conditional
+  //      on whether the response has been sent
   delete this;
 };
 }

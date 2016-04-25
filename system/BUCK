@@ -17,6 +17,7 @@ system_lib("z")
 
 local_lib("wangle", [":folly"])
 local_lib("proxygenlib", [":folly", ":wangle"])
+local_lib("proxygenhttpserver", [":folly", ":wangle", ":proxygenlib"])
 local_lib("folly", 
     [
         ":boost_context",

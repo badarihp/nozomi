@@ -1,18 +1,26 @@
 #include <iostream>
 
-#include "src/Route.h"
+#include "src/Config.h"
 #include "src/HTTPResponse.h"
+#include "src/Route.h"
+#include "src/Router.h"
+#include "src/Server.h"
 
+#include <proxygen/httpserver/HTTPServer.h>
+#include <proxygen/httpserver/SignalHandler.h>
 using namespace std;
 using namespace sakura;
 
 int main() {
-/*
-  std::function<HTTPResponse(int, double, int, int)> f = 
-    [](int i, double d, int ii, int iii) -> HTTPResponse { 
-      i = i+1;
-      throw std::runtime_error("error"); 
-    };
-*/
+  auto router = make_router({}, make_route("/", {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const HTTPRequest&)>( [](const HTTPRequest& request) {
+                              return HTTPResponse(200, "hello, world");
+                            })));
+  Config config({make_tuple("0.0.0.0", 8080, Config::Protocol::HTTP)}, 2);
+  Server server(config, std::move(router));
+  auto started = server.start().get();
+  string ignore;
+  cout << "Press enter" << endl;
+  cin >> ignore;
+  auto stopped = server.stop().get();
   return 0;
 }
