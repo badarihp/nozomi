@@ -41,7 +41,7 @@ TEST(RouterTest, checks_static_routes_first) {
   routes.push_back(
       make_route("/{{i}}", {HTTPMethod::GET},
                  std::function<HTTPResponse(const HTTPRequest&, int64_t)>(
-                     [](const HTTPRequest& reqeust, int i) {
+                     [](const HTTPRequest& reqeust, int64_t) {
                        return HTTPResponse(202, "202 Message");
                      })));
 

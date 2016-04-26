@@ -1,47 +1,60 @@
 #include <folly/io/async/EventBase.h>
+#include <glog/logging.h>
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/httpserver/RequestHandlerFactory.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 
 #include "src/Config.h"
+#include "src/Router.h"
+#include "src/HTTPHandler.h"
 
 namespace sakura {
 
-class HTTPHandlerFactory : public virtual proxygen::RequestHandlerFactory {
- private:
-  Config config_;
-  Router router_;
+template<typename HandlerType = HTTPHandler>
+class HTTPHandlerFactory: public virtual proxygen::RequestHandlerFactory {
+  private:
+    Config config_;
+    Router router_;
+    folly::EventBase* evb_;
 
- public:
-  HTTPHandlerFactory(Config config, Router router);
+  public:
+HTTPHandlerFactory(Config config, Router router)
+    : config_(std::move(config)), router_(std::move(router)) {}
 
-  /**
-   * Invoked in each thread server is going to handle requests
-   * before we start handling requests. Can be used to setup
-   * thread-local setup for each thread (stats and such).
-   */
-  virtual void onServerStart(folly::EventBase* evb) noexcept override;
+void onServerStart(folly::EventBase* evb) noexcept {
+  DCHECK(evb != nullptr);
+  evb_ = evb;
+  LOG(INFO) << "Started handler factory";
+}
 
-  /**
-   * Invoked in each handler thread after all the connections are
-   * drained from that thread. Can be used to tear down thread-local setup.
-   */
-  virtual void onServerStop() noexcept override;
+/**
+ * Invoked in each handler thread after all the connections are
+ * drained from that thread. Can be used to tear down thread-local setup.
+ */
+void onServerStop() noexcept {
+  LOG(INFO) << "Stopped handler factory";
+}
 
-  /**
-   * Invoked for each new request server handles. HTTPMessage is provided
-   * so that user can potentially choose among several implementation of
-   * handler based on URL or something. No, need to save/copy this
-   * HTTPMessage. RequestHandler will be given the HTTPMessage
-   * in a separate callback.
-   *
-   * Some request handlers don't handle the request themselves (think filters).
-   * They do take some actions based on request/response but otherwise they
-   * just hand-off request to some other RequestHandler. This upstream
-   * RequestHandler is given as first parameter. For the terminal RequestHandler
-   * this will by nullptr.
-   */
-  virtual proxygen::RequestHandler* onRequest(
-      proxygen::RequestHandler*, proxygen::HTTPMessage*) noexcept override;
+/**
+ * Invoked for each new request server handles. HTTPMessage is provided
+ * so that user can potentially choose among several implementation of
+ * handler based on URL or something. No, need to save/copy this
+ * HTTPMessage. RequestHandler will be given the HTTPMessage
+ * in a separate callback.
+ *
+ * Some request handlers don't handle the request themselves (think filters).
+ * They do take some actions based on request/response but otherwise they
+ * just hand-off request to some other RequestHandler. This upstream
+ * RequestHandler is given as first parameter. For the terminal RequestHandler
+ * this will by nullptr.
+ */
+proxygen::RequestHandler* onRequest(
+    proxygen::RequestHandler* previousHandler,
+    proxygen::HTTPMessage* message) noexcept {
+  DCHECK(message != nullptr);
+  return new HandlerType(evb_, &router_, router_.getHandler(message));
+}
+
 };
+
 }

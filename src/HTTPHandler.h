@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <folly/io/async/EventBase.h>
 #include <folly/io/IOBuf.h>
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
@@ -12,13 +13,14 @@ namespace sakura {
 
 class HTTPHandler : public virtual proxygen::RequestHandler {
  private:
+  folly::EventBase* evb_;
   Router* router_;
   std::unique_ptr<proxygen::HTTPMessage> message_;
   std::unique_ptr<folly::IOBuf> body_;
   std::function<HTTPResponse(const HTTPRequest&)> handler_;
 
  public:
-  HTTPHandler(Router* router, std::function<HTTPResponse(const HTTPRequest&)> handler);
+  HTTPHandler(folly::EventBase* evb, Router* router, std::function<HTTPResponse(const HTTPRequest&)> handler);
   void sendResponse(const HTTPResponse& response);
 
   /**

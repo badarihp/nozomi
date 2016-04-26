@@ -4,6 +4,7 @@
 
 #include <glog/logging.h>
 
+using folly::EventBase;
 using folly::IOBuf;
 using std::shared_ptr;
 using std::unique_ptr;
@@ -13,9 +14,12 @@ using proxygen::ResponseBuilder;
 
 namespace sakura {
 HTTPHandler::HTTPHandler(
+    EventBase* evb,
     Router* router,
     std::function<HTTPResponse(const HTTPRequest&)> handler)
-    : router_(router), handler_(std::move(handler)), body_(IOBuf::create(0)) { DCHECK(router != nullptr);
+    : evb_(evb), router_(router), handler_(std::move(handler)), body_(IOBuf::create(0)) { 
+DCHECK(evb != nullptr);
+DCHECK(router != nullptr);
 }
 
 void HTTPHandler::sendResponse(const HTTPResponse& response) {

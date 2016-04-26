@@ -27,7 +27,7 @@ HTTPServerOptions getHttpServerOptions(const Config& config, Router router) {
   options.threads = config.getWorkerThreads();
   vector<unique_ptr<RequestHandlerFactory>> handlerFactories;
   handlerFactories.push_back(
-      std::make_unique<HTTPHandlerFactory>(config, std::move(router)));
+      std::make_unique<HTTPHandlerFactory<>>(config, std::move(router)));
   options.handlerFactories = std::move(handlerFactories);
   options.enableContentCompression = true;
   return options;

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <folly/io/async/EventBase.h>
 #include <folly/io/IOBuf.h>
 #include <proxygen/httpserver/ResponseHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
@@ -67,6 +68,7 @@ struct HTTPHandlerTest : public ::testing::Test {
 
   std::unique_ptr<HTTPMessage> requestMessage;
   std::unique_ptr<IOBuf> body;
+  folly::EventBase evb;
   Router router;
   HTTPHandler httpHandler;
   CustomHandler responseHandler;
@@ -86,6 +88,7 @@ struct HTTPHandlerTest : public ::testing::Test {
                                          return handler(request);
                                        })))),
         httpHandler(
+            &evb,
             &router,
             [this](const HTTPRequest& request) { return handler(request); }),
         responseHandler(&httpHandler) {
@@ -191,5 +194,6 @@ TEST_F(HTTPHandlerTest, sends_empty_buffer_when_no_body_sent) {
 
 TEST(DISABLED_HTTPHandlerTest, sets_unset_headers) {}
 TEST(DISABLED_HTTPHandlerTest, does_not_set_default_headers_if_already_set) {}
+TEST(DISABLED_HTTPHandlerTest, drives_future_with_correct_evb) {}
 }
 }
