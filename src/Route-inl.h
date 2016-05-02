@@ -122,21 +122,20 @@ inline T get_handler_args(const boost::smatch& matches) {
 }
 
 template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
-inline HTTPResponse call_handler(
-    std::index_sequence<N...>,
-    const HandlerType& f,
-    const HTTPRequest& request,
-    const boost::smatch& matches) {
+inline HTTPResponse call_handler(std::index_sequence<N...>,
+                                 type_sequence<HandlerArgs...>,
+                                 const HandlerType& f,
+                                 const HTTPRequest& request,
+                                 const boost::smatch& matches) {
   return f(request, get_handler_args<N, HandlerArgs>(matches)...);
 }
 
 template <typename HandlerType, typename... HandlerArgs>
-inline HTTPResponse call_handler(
-    const HandlerType& f,
-    const HTTPRequest& request,
-    const boost::smatch& matches) {
-  return call_handler(std::index_sequence_for<HandlerArgs...>{}, f, request,
-                      matches);
+inline HTTPResponse call_handler(const HandlerType& f,
+                                 const HTTPRequest& request,
+                                 const boost::smatch& matches) {
+  return call_handler(std::index_sequence_for<HandlerArgs...>{},
+                      type_sequence<HandlerArgs...>{}, f, request, matches);
 }
 
 template <typename... Args>
@@ -150,7 +149,7 @@ inline void parse_function_parameters(std::vector<RouteParamType>& params) {
 }
 
 template <typename... Args>
-std::vector<RouteParamType> parse_function_parameters() { 
+std::vector<RouteParamType> parse_function_parameters() {
   std::vector<RouteParamType> params;
   params.reserve(sizeof...(Args));
   parse_function_parameters<Args...>(params);
@@ -188,7 +187,8 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
                       // because there's no absolute guarantee that an std::move
                       // won't invalidate the
                       // reference to the original string.
-                      return route::call_handler(handler_, request, matches);
+                      return route::call_handler<HandlerType, HandlerArgs...>(
+                          handler_, request, matches);
                     }));
 }
 

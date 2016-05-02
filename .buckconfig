@@ -5,7 +5,7 @@ aspp   = /usr/bin/clang-3.8
 cxx    = /usr/bin/clang++-3.8
 cxxpp  = /usr/bin/clang++-3.8
 ld     = /usr/bin/clang++-3.8
-cxxflags = -std=c++14 -Wextra -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -g -fno-omit-frame-pointer -O3 -pthread -Wno-unused-parameter -isystem/opt/facebook/include
+cxxflags = -std=c++14 -Wextra -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -g -fno-omit-frame-pointer -O3 -pthread -Wno-unused-parameter
 gtest_dep=//third-party/googletest/googletest:google-test
 
 sodir.system = /usr/lib/x86_64-linux-gnu

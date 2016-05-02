@@ -55,8 +55,8 @@ inline auto make_route(std::string pattern,
                        std::unordered_set<proxygen::HTTPMethod> methods,
                        HandlerType handler) {
   auto types = make_type_sequence(handler);
-  return std::move(make_route(std::move(pattern), std::move(methods),
-                              std::move(handler), types));
+  return make_route(std::move(pattern), std::move(methods),
+                              std::move(handler), types);
 }
 
 }
