@@ -54,6 +54,7 @@ def __system_lib(libname, lib_dir, deps=None, **kwargs):
         lib_dir=lib_dir,
         visibility=["PUBLIC"],
         exported_linker_flags=exported_linker_flags,
+        exported_preprocessor_flags=["-I/opt/facebook/include"],
         exported_deps=deps or [],
         **kwargs
     )

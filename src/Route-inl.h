@@ -121,18 +121,18 @@ inline T get_handler_args(const boost::smatch& matches) {
   return get_handler_args<T>(N, matches);
 }
 
-template <typename... HandlerArgs, std::size_t... N>
+template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
 inline HTTPResponse call_handler(
     std::index_sequence<N...>,
-    const std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)>& f,
+    const HandlerType& f,
     const HTTPRequest& request,
     const boost::smatch& matches) {
   return f(request, get_handler_args<N, HandlerArgs>(matches)...);
 }
 
-template <typename... HandlerArgs>
+template <typename HandlerType, typename... HandlerArgs>
 inline HTTPResponse call_handler(
-    const std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)>& f,
+    const HandlerType& f,
     const HTTPRequest& request,
     const boost::smatch& matches) {
   return call_handler(std::index_sequence_for<HandlerArgs...>{}, f, request,
@@ -150,8 +150,7 @@ inline void parse_function_parameters(std::vector<RouteParamType>& params) {
 }
 
 template <typename... Args>
-std::vector<RouteParamType> parse_function_parameters(
-    const std::function<HTTPResponse(const HTTPRequest&, Args...)>& f) {
+std::vector<RouteParamType> parse_function_parameters() { 
   std::vector<RouteParamType> params;
   params.reserve(sizeof...(Args));
   parse_function_parameters<Args...>(params);
@@ -163,8 +162,8 @@ parse_route_pattern(const std::string& route);
 
 }  // end namespace route
 
-template <typename... HandlerArgs>
-RouteMatch Route<HandlerArgs...>::handler(
+template <typename HandlerType, typename... HandlerArgs>
+RouteMatch Route<HandlerType, HandlerArgs...>::handler(
     const proxygen::HTTPMessage* request) const {
   boost::smatch matches;
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
@@ -193,15 +192,15 @@ RouteMatch Route<HandlerArgs...>::handler(
                     }));
 }
 
-template <typename... HandlerArgs>
-Route<HandlerArgs...>::Route(
+template <typename HandlerType, typename... HandlerArgs>
+Route<HandlerType, HandlerArgs...>::Route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
-    std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler)
+    HandlerType handler)
     : BaseRoute(std::move(pattern), std::move(methods), false),
       handler_(std::move(handler)) {
   auto regexAndPatternParams = route::parse_route_pattern(originalPattern_);
-  auto functionParams = route::parse_function_parameters(handler);
+  auto functionParams = route::parse_function_parameters<HandlerArgs...>();
   const auto& patternParams = regexAndPatternParams.second;
   regex_ = std::move(regexAndPatternParams.first);
 

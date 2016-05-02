@@ -44,6 +44,7 @@ create_lib("Route",
         name("BaseRoute"),
         name("HTTPResponse"),
         name("HTTPRequest"),
+        name("Util"),
     ],
     additional_headers=[
         "Route-inl.h",

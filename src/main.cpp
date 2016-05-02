@@ -11,21 +11,44 @@
 using namespace std;
 using namespace sakura;
 
+struct A {
+  static HTTPResponse method(const HTTPRequest& request) {
+    return HTTPResponse(200, "hello, world!");
+  }
+};
+
 int main() {
-  auto router = make_router({}, 
-make_route("/", {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const HTTPRequest&)>( [](const HTTPRequest& request) {
-                              return HTTPResponse(200, "hello, world");
-                            })),
-make_route("/{{i}}", {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const HTTPRequest&, int64_t)>( [](const HTTPRequest& request, int64_t i) {
-                              return HTTPResponse(200, folly::sformat("hello, world: {}", i));
-                            }))
-);
-  Config config({make_tuple("0.0.0.0", 8080, Config::Protocol::HTTP)}, 2);
-  Server server(config, std::move(router));
-  auto started = server.start().get();
-  string ignore;
-  cout << "Press enter" << endl;
-  cin >> ignore;
-  auto stopped = server.stop().get();
-  return 0;
+//TODO: Make this work
+auto route = make_route("/{{i}}", {proxygen::HTTPMethod::GET}, &A::method);
+  auto reoute = make_route("/{{i}}", {proxygen::HTTPMethod::GET},
+                 [](const HTTPRequest& request, int64_t i) {
+                   return HTTPResponse(200, "hello, world");
+                 });
+//auto route = make_route("/{{i}}", {proxygen::HTTPMethod::GET}, &A::method);
+      // make_route("/{{i}}",
+      // {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const
+      // HTTPRequest&, int64_t)>( [](const HTTPRequest& request, int64_t i) {
+      /*
+        auto router = make_router({},
+      make_route("/",
+      {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const
+      HTTPRequest&)>( [](const HTTPRequest& request) {
+                                    return HTTPResponse(200, "hello, world");
+                                  }))
+      //make_route("/{{i}}",
+      {proxygen::HTTPMethod::GET},std::function<HTTPResponse(const HTTPRequest&,
+      int64_t)>( [](const HTTPRequest& request, int64_t i) {
+      //                              return HTTPResponse(200,
+      folly::sformat("hello, world: {}", i));
+      //                            }))
+      );
+        Config config({make_tuple("0.0.0.0", 8080, Config::Protocol::HTTP)}, 2);
+        Server server(config, std::move(router));
+        auto started = server.start().get();
+        string ignore;
+        cout << "Press enter" << endl;
+        cin >> ignore;
+        auto stopped = server.stop().get();
+      */
+      return 0;
 }
