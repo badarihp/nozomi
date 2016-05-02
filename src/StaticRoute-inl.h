@@ -1,14 +1,16 @@
 #pragma once
 namespace sakura {
 
-StaticRoute::StaticRoute(
+template<typename HandlerType>
+StaticRoute<HandlerType>::StaticRoute(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
-    std::function<HTTPResponse(const HTTPRequest& request)> handler)
+    HandlerType handler)
     : BaseRoute(std::move(pattern), std::move(methods), true),
       handler_(std::move(handler)) {}
 
-RouteMatch StaticRoute::handler(
+template<typename HandlerType>
+RouteMatch StaticRoute<HandlerType>::handler(
     const proxygen::HTTPMessage* request) const {
   DCHECK(request != nullptr);
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
