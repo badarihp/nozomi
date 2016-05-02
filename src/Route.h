@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "src/BaseRoute.h"
 #include "src/EnumHash.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
@@ -14,48 +15,8 @@
 
 namespace sakura {
 
-enum RouteMatchResult {
-  PathNotMatched,    // Path didn't match
-  MethodNotMatched,  // Path matched, method didn't
-  RouteMatched,      // The route matched entirely
-};
-
-/*
- * Determines whether a Route matches a given pattern, and if not,
- * why it doesn't
- */
-struct RouteMatch {
-  RouteMatch(RouteMatchResult result,
-             std::function<HTTPResponse(const HTTPRequest&)> handler =
-                 std::function<HTTPResponse(const HTTPRequest&)>())
-      : result(result), handler(std::move(handler)) {}
-
-  const RouteMatchResult result;
-  const std::function<HTTPResponse(const HTTPRequest&)> handler;
-};
-
-class BaseRoute {
- protected:
-  std::string originalPattern_;
-  std::unordered_set<proxygen::HTTPMethod> methods_;
-  bool isStaticRoute_;
-  // TODO: This should take a path and a method, not a request
-
-  BaseRoute(std::string originalPattern,
-            std::unordered_set<proxygen::HTTPMethod> methods,
-            bool isStaticRoute)
-      : originalPattern_(std::move(originalPattern)),
-        methods_(std::move(methods)),
-        isStaticRoute_(isStaticRoute) {}
-
- public:
-  virtual ~BaseRoute(){};
-  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const = 0;
-  inline bool isStaticRoute() { return isStaticRoute_; }
-};
-
 template <typename... HandlerArgs>
-class Route : public virtual BaseRoute {
+class Route : public BaseRoute {
   // TODO: Streaming caller
  private:
   std::function<HTTPResponse(const HTTPRequest&, HandlerArgs...)> handler_;
@@ -78,25 +39,6 @@ inline std::unique_ptr<Route<HandlerArgs...>> make_route(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 
-class StaticRoute : public virtual BaseRoute {
-  // TODO: Streaming caller
- private:
-  std::function<HTTPResponse(const HTTPRequest&)> handler_;
-
- public:
-  StaticRoute(std::string pattern,
-              std::unordered_set<proxygen::HTTPMethod> methods,
-              std::function<HTTPResponse(const HTTPRequest& request)> handler);
-  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const;
-};
-
-inline std::unique_ptr<BaseRoute> make_static_route(
-    std::string pattern,
-    std::unordered_set<proxygen::HTTPMethod> methods,
-    std::function<HTTPResponse(const HTTPRequest& request)> handler) {
-  return std::make_unique<StaticRoute>(std::move(pattern), std::move(methods),
-                                       std::move(handler));
-}
 }
 
 #include "src/Route-inl.h"

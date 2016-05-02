@@ -19,8 +19,29 @@ create_lib("HTTPResponse",
         "StringUtils.h",
     ],
 )
+
+create_lib("BaseRoute",
+    [
+        name("HTTPResponse"),
+        name("HTTPRequest"),
+    ],
+    header_only=True,
+)
+
+create_lib("StaticRoute",
+    [
+        name("BaseRoute"),
+        name("HTTPResponse"),
+        name("HTTPRequest"),
+    ],
+    header_only=True,
+    additional_headers=[
+        "StaticRoute-inl.h",
+    ],
+)
 create_lib("Route", 
     [
+        name("BaseRoute"),
         name("HTTPResponse"),
         name("HTTPRequest"),
     ],
@@ -29,7 +50,13 @@ create_lib("Route",
         "EnumHash.h",
     ],
 )
-create_lib("Router", [name("Route"), name("Util")])
+create_lib("Router", 
+    [
+        name("Route"),
+        name("StaticRoute"),
+        name("Util"),
+    ],
+)
 
 create_lib("HTTPHandler", [
     name("Config"),

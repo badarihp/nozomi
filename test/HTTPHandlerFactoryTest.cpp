@@ -8,7 +8,9 @@
 #include "src/HTTPHandlerFactory.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
+#include "src/Route.h"
 #include "src/Router.h"
+#include "src/StaticRoute.h"
 
 using namespace std;
 using namespace folly;

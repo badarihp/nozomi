@@ -10,6 +10,8 @@
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <wangle/acceptor/TransportInfo.h>
 
+#include "src/Route.h"
+#include "src/StaticRoute.h"
 #include "src/HTTPHandler.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"

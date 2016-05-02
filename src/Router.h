@@ -10,7 +10,7 @@
 
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
-#include "src/Route.h"
+#include "src/BaseRoute.h"
 #include "src/Util.h"
 
 namespace sakura {

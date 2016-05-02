@@ -7,6 +7,7 @@
 
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
+#include "src/StaticRoute.h"
 #include "src/Route.h"
 #include "src/Router.h"
 
