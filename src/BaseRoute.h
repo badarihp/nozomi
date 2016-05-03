@@ -47,7 +47,7 @@ class BaseRoute {
 
  public:
   virtual ~BaseRoute(){};
-  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const = 0;
+  virtual RouteMatch handler(const proxygen::HTTPMessage* request) = 0;
   inline bool isStaticRoute() { return isStaticRoute_; }
 
 };

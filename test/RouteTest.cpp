@@ -331,6 +331,23 @@ struct TestController {
   }
 };
 
+TEST(RouteTest, static_routes_take_mutable_callables) {
+  auto i = 0;
+  auto request = make_request("/testing", HTTPMethod::GET);
+  auto r = make_static_route("/testing", {HTTPMethod::GET},
+                             [](const HTTPRequest& request) {
+                               i = 5;
+                               return HTTPResponse(200, request.getPath());
+                             });
+  auto r3 = make_static_route("/testing", {HTTPMethod::GET},
+                              &TestController::staticHandler);
+
+  ASSERT_EQ(
+      "/testing",
+      to_string(
+          r->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(5, i);
+}
 TEST(RouteTest, static_routes_take_all_callables) {
   auto request = make_request("/testing", HTTPMethod::GET);
   auto r1 = make_static_route("/testing", {HTTPMethod::GET},
@@ -357,6 +374,23 @@ TEST(RouteTest, static_routes_take_all_callables) {
       "/testing",
       to_string(
           r3->handler(&request.getRawRequest()).handler(request).getBody()));
+}
+
+TEST(RouteTest, dynamic_routes_take_mutable_callables) {
+  int i = 0;
+  auto request = make_request("/testing/1", HTTPMethod::GET);
+  auto r = make_route("/testing/{{i}}", {HTTPMethod::GET},
+                      [&i](const HTTPRequest& request, int64_t i) mutable {
+                        i = 5;
+                        return HTTPResponse(
+                            200, sformat("{} {}", request.getPath(), i));
+                      });
+
+  ASSERT_EQ(
+      "/testing/1 1",
+      to_string(
+          r->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(5, i);
 }
 
 TEST(RouteTest, dynamic_routes_take_all_callables) {

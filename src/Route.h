@@ -27,7 +27,7 @@ class Route : public BaseRoute {
   Route(std::string pattern,
         std::unordered_set<proxygen::HTTPMethod> methods,
         HandlerType handler);
-  virtual RouteMatch handler(const proxygen::HTTPMessage* request) const;
+  virtual RouteMatch handler(const proxygen::HTTPMessage* request) override;
 };
 
 template <typename... HandlerArgs>

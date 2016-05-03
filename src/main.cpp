@@ -23,12 +23,23 @@ struct SampleController {
 };
 
 int main() {
+  int a = 1;
   auto router = make_router(
       {}, make_route("/", {Method::GET},
                      std::function<HTTPResponse(const HTTPRequest&)>(
                          [](const HTTPRequest& request) {
                            return HTTPResponse(200, "hello, world");
                          })),
+      make_static_route("/test", {Method::GET},
+                        [&a](const HTTPRequest& request) mutable {
+                          a++;
+                          return HTTPResponse(200);
+                        }),
+      make_route("/testing", {Method::GET},
+                 [&a](const HTTPRequest& request) {
+                   a++;
+                   return HTTPResponse(200);
+                 }),
       make_route("/{{i}}", {Method::GET},
                  [](const HTTPRequest& request, int64_t i) {
                    return HTTPResponse(200,

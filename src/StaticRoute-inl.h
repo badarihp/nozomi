@@ -11,7 +11,7 @@ StaticRoute<HandlerType>::StaticRoute(
 
 template<typename HandlerType>
 RouteMatch StaticRoute<HandlerType>::handler(
-    const proxygen::HTTPMessage* request) const {
+    const proxygen::HTTPMessage* request) {
   DCHECK(request != nullptr);
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
   if (std::get<1>(methodAndPath) != originalPattern_) {
@@ -23,6 +23,6 @@ RouteMatch StaticRoute<HandlerType>::handler(
   return RouteMatch(
       RouteMatchResult::RouteMatched,
       std::function<HTTPResponse(const HTTPRequest&)>(
-          [this](const HTTPRequest& request) { return handler_(request); }));
+          [this](const HTTPRequest& request) mutable { return handler_(request); }));
 }
 }

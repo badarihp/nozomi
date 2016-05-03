@@ -163,7 +163,7 @@ parse_route_pattern(const std::string& route);
 
 template <typename HandlerType, typename... HandlerArgs>
 RouteMatch Route<HandlerType, HandlerArgs...>::handler(
-    const proxygen::HTTPMessage* request) const {
+    const proxygen::HTTPMessage* request) {
   DCHECK(request != nullptr) << "Request must not be null";
   boost::smatch matches;
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
@@ -180,7 +180,7 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
   return RouteMatch(RouteMatchResult::RouteMatched,
                     std::function<HTTPResponse(const HTTPRequest&)>([
                       path = std::move(path), matches = std::move(matches), this
-                    ](const HTTPRequest& request) {
+                    ](const HTTPRequest& request) mutable {
                       // We have to hold onto the original path variable because
                       // the matches object
                       // retains a reference to the string that was matched on.
