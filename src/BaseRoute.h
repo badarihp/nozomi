@@ -23,12 +23,12 @@ enum RouteMatchResult {
  */
 struct RouteMatch {
   RouteMatch(RouteMatchResult result,
-             std::function<HTTPResponse(const HTTPRequest&)> handler =
-                 std::function<HTTPResponse(const HTTPRequest&)>())
+             std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler =
+                 std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>())
       : result(result), handler(std::move(handler)) {}
 
   const RouteMatchResult result;
-  const std::function<HTTPResponse(const HTTPRequest&)> handler;
+  const std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler;
 };
 
 class BaseRoute {

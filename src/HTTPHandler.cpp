@@ -16,7 +16,7 @@ namespace sakura {
 HTTPHandler::HTTPHandler(
     EventBase* evb,
     Router* router,
-    std::function<HTTPResponse(const HTTPRequest&)> handler)
+    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler)
     : evb_(evb),
       router_(router),
       handler_(std::move(handler)),
@@ -67,13 +67,15 @@ void HTTPHandler::onEOM() noexcept {
   // TODO: This request probably needs to be a shared_ptr instead
   //      when I get to the point that I have futures. Async gets
   //      tricky with just references
+  // TODO: Get rid fo the '.get()' calls, and store the future,
+  //       sending only after we complete the future or timeout
   auto request = HTTPRequest(std::move(message_), std::move(body_));
   try {
-    sendResponse(handler_(std::move(request)));
+    sendResponse(handler_(request).get());
   } catch (const std::exception& e) {
     try {
       LOG(INFO) << "Error: " << e.what();
-      sendResponse(router_->getErrorHandler(500)(request));
+      sendResponse(router_->getErrorHandler(500)(request).get());
     } catch (const std::exception& e) {
       sendResponse(HTTPResponse(500, "Unknown error"));
     }

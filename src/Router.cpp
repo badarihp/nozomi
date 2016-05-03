@@ -7,7 +7,7 @@ using std::unordered_map;
 namespace sakura {
 
 Router::Router(
-    unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
+    unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
         errorRoutes,
     vector<unique_ptr<BaseRoute>> routes)
     : errorRoutes_(std::move(errorRoutes)) {
@@ -20,7 +20,7 @@ Router::Router(
   }
 }
 
-std::function<HTTPResponse(const HTTPRequest&)> Router::getHandler(
+std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> Router::getHandler(
     const proxygen::HTTPMessage* request) const {
   // Check static routes first, then dynamic ones
   bool methodNotFound = false;
@@ -57,12 +57,12 @@ std::function<HTTPResponse(const HTTPRequest&)> Router::getHandler(
   }
 }
 
-std::function<HTTPResponse(const HTTPRequest&)> Router::getErrorHandler(
+std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> Router::getErrorHandler(
     int statusCode) const {
   auto route = errorRoutes_.find(statusCode);
   if (route == errorRoutes_.end()) {
     return [statusCode](const HTTPRequest& request) {
-      return HTTPResponse(statusCode);
+      return HTTPResponse::future(statusCode);
     };
   } else {
     return [&handler = route->second](const HTTPRequest& request) {

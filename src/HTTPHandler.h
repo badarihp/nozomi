@@ -17,12 +17,12 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
   Router* router_;
   std::unique_ptr<proxygen::HTTPMessage> message_;
   std::unique_ptr<folly::IOBuf> body_;
-  std::function<HTTPResponse(const HTTPRequest&)> handler_;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler_;
 
  public:
   HTTPHandler(folly::EventBase* evb,
               Router* router,
-              std::function<HTTPResponse(const HTTPRequest&)> handler);
+              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler);
   void sendResponse(const HTTPResponse& response);
 
   /**

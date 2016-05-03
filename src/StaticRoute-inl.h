@@ -22,7 +22,7 @@ RouteMatch StaticRoute<HandlerType>::handler(
   }
   return RouteMatch(
       RouteMatchResult::RouteMatched,
-      std::function<HTTPResponse(const HTTPRequest&)>([this](
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([this](
           const HTTPRequest& request) mutable { return handler_(request); }));
 }
 }

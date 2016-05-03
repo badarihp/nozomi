@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 
+#include <folly/futures/Future.h>
 #include <folly/io/IOBuf.h>
 #include <folly/json.h>
 #include <proxygen/lib/http/HTTPHeaders.h>
@@ -47,41 +48,46 @@ class HTTPResponse {
 
   // string converts to dynamic, and I can't seem to disable conversion
   // for specific arguments. Different names should do it, though
-  static inline HTTPResponse fromJson(
+  static inline folly::Future<HTTPResponse> fromJson(
       int16_t statusCode,
       const folly::dynamic& body,
       std::unordered_map<std::string, std::string> headers) {
-    return HTTPResponse(statusCode, body, std::move(headers));
+    return future(statusCode, body, std::move(headers));
   }
-  static inline HTTPResponse fromString(
+  static inline folly::Future<HTTPResponse> fromString(
       int16_t statusCode,
       const std::string& body,
       std::unordered_map<std::string, std::string> headers) {
-    return HTTPResponse(statusCode, body, std::move(headers));
+    return future(statusCode, body, std::move(headers));
   }
-  static inline HTTPResponse fromBytes(
+  static inline folly::Future<HTTPResponse> fromBytes(
       int16_t statusCode,
       std::unique_ptr<folly::IOBuf> body,
       std::unordered_map<std::string, std::string> headers) {
-    return HTTPResponse(statusCode, std::move(body), std::move(headers));
+    return future(statusCode, std::move(body), std::move(headers));
   }
-  static inline HTTPResponse fromJson(
+  static inline folly::Future<HTTPResponse> fromJson(
       int16_t statusCode,
       const folly::dynamic& body,
       std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
-    return HTTPResponse(statusCode, body, std::move(headers));
+    return future(statusCode, body, std::move(headers));
   }
-  static inline HTTPResponse fromString(
+  static inline folly::Future<HTTPResponse> fromString(
       int16_t statusCode,
       const std::string& body,
       std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
-    return HTTPResponse(statusCode, body, std::move(headers));
+    return future(statusCode, body, std::move(headers));
   }
-  static inline HTTPResponse fromBytes(
+  static inline folly::Future<HTTPResponse> fromBytes(
       int16_t statusCode,
       std::unique_ptr<folly::IOBuf> body,
       std::unordered_map<proxygen::HTTPHeaderCode, std::string> headers) {
-    return HTTPResponse(statusCode, std::move(body), std::move(headers));
+    return future(statusCode, std::move(body), std::move(headers));
+  }
+
+  template<typename... Args>
+  static inline folly::Future<HTTPResponse> future(Args&&... args) {
+    return folly::makeFuture(HTTPResponse(std::forward<Args>(args)...));
   }
 
   inline const proxygen::HTTPMessage& getHeaders() const { return response_; }

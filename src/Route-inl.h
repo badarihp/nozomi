@@ -122,7 +122,7 @@ inline T get_handler_args(const boost::smatch& matches) {
 }
 
 template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
-inline HTTPResponse call_handler(std::index_sequence<N...>,
+inline folly::Future<HTTPResponse> call_handler(std::index_sequence<N...>,
                                  type_sequence<HandlerArgs...>,
                                  HandlerType& f,
                                  const HTTPRequest& request,
@@ -131,7 +131,7 @@ inline HTTPResponse call_handler(std::index_sequence<N...>,
 }
 
 template <typename HandlerType, typename... HandlerArgs>
-inline HTTPResponse call_handler(HandlerType& f,
+inline folly::Future<HTTPResponse> call_handler(HandlerType& f,
                                  const HTTPRequest& request,
                                  const boost::smatch& matches) {
   return call_handler(std::index_sequence_for<HandlerArgs...>{},
@@ -178,7 +178,7 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
   }
 
   return RouteMatch(RouteMatchResult::RouteMatched,
-                    std::function<HTTPResponse(const HTTPRequest&)>([
+                    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([
                       path = std::move(path), matches = std::move(matches), this
                     ](const HTTPRequest& request) mutable {
                       // We have to hold onto the original path variable because

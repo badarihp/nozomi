@@ -11,6 +11,7 @@
 #include "src/Util.h"
 
 #include <boost/regex.hpp>
+#include <folly/futures/Future.h>
 #include <folly/Optional.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
@@ -33,7 +34,7 @@ class Route : public BaseRoute {
 template <typename... HandlerArgs>
 inline auto make_route(std::string pattern,
                        std::unordered_set<proxygen::HTTPMethod> methods,
-                       HTTPResponse (*handler)(const HTTPRequest&,
+                       folly::Future<HTTPResponse> (*handler)(const HTTPRequest&,
                                                HandlerArgs...)) {
   return std::make_unique<Route<decltype(handler), HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
