@@ -20,9 +20,10 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler_;
 
  public:
-  HTTPHandler(folly::EventBase* evb,
-              Router* router,
-              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler);
+  HTTPHandler(
+      folly::EventBase* evb,
+      Router* router,
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler);
   void sendResponse(const HTTPResponse& response);
 
   /**

@@ -85,7 +85,7 @@ class HTTPResponse {
     return future(statusCode, std::move(body), std::move(headers));
   }
 
-  template<typename... Args>
+  template <typename... Args>
   static inline folly::Future<HTTPResponse> future(Args&&... args) {
     return folly::makeFuture(HTTPResponse(std::forward<Args>(args)...));
   }

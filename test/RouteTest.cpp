@@ -28,8 +28,10 @@ HTTPRequest make_request(
 }
 
 TEST(RouteTest, fails_if_path_has_different_number_of_args_than_func) {
-  std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f1;
-  std::function<HTTPResponse(const HTTPRequest&)> f2;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&, int64_t,
+                                            int64_t)>
+      f1;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> f2;
   ASSERT_THROW({ auto r = make_route("/{{i}}", {HTTPMethod::GET}, f1); },
                std::runtime_error);
   ASSERT_THROW(
@@ -42,7 +44,9 @@ TEST(RouteTest, fails_if_path_has_different_number_of_args_than_func) {
 }
 
 TEST(RouteTest, fails_if_path_has_different_args_than_func) {
-  std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&, int64_t,
+                                            int64_t)>
+      f;
   ASSERT_THROW({ auto r = make_route("/{{i}}/{{d}}", {HTTPMethod::GET}, f); },
                std::runtime_error);
 }
@@ -51,7 +55,7 @@ template <typename... Args>
 void testRouteDoesntMatch(string requestPath, string pattern) {
   auto request = make_request(requestPath, HTTPMethod::GET);
   auto f = [](const HTTPRequest& request, Args... args) {
-    return HTTPResponse(200);
+    return HTTPResponse::future(200);
   };
   auto r = make_route(pattern, {HTTPMethod::GET}, f);
 
@@ -76,7 +80,9 @@ TEST(RouteTest, returns_empty_function_if_pattern_doesnt_match) {
 
 TEST(RouteTest, returns_invalid_method_if_pattern_matches_and_methods_dont) {
   auto request = make_request("/1234/1234", HTTPMethod::PUT);
-  std::function<HTTPResponse(const HTTPRequest&, int64_t, int64_t)> f;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&, int64_t,
+                                            int64_t)>
+      f;
   auto r = make_route("/{{i}}/{{i}}", {HTTPMethod::GET, HTTPMethod::POST}, f);
   auto match = r->handler(&request.getRawRequest());
 
@@ -95,7 +101,7 @@ void testRouteMatching(string requestPath,
                                    Args... args) mutable {
     result = std::make_tuple<Args...>(std::move(args)...);
     ranFunction = true;
-    return HTTPResponse(200);
+    return HTTPResponse::future(200);
   };
 
   auto route = make_route(pattern, {HTTPMethod::GET}, f);
@@ -197,16 +203,16 @@ TEST(RouteTest, overflow_is_handled) {
   int64_t int_result = 0;
   double double_result = 0.0;
 
-  std::function<HTTPResponse(const HTTPRequest&, int64_t)> f_int(
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&, int64_t)> f_int(
       [&int_result](const HTTPRequest& r, int64_t i) mutable {
         int_result = i;
-        return HTTPResponse(200);
+        return HTTPResponse::future(200);
       });
-  std::function<HTTPResponse(const HTTPRequest&, double)> f_double(
-      [&double_result](const HTTPRequest& r, double i) mutable {
-        double_result = i;
-        return HTTPResponse(200);
-      });
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&, double)>
+  f_double([&double_result](const HTTPRequest& r, double i) mutable {
+    double_result = i;
+    return HTTPResponse::future(200);
+  });
 
   auto request1 = make_request("/1777777777777777777777", HTTPMethod::GET);
   auto request2 = make_request("/-1777777777777777777777", HTTPMethod::GET);
@@ -239,48 +245,49 @@ TEST(RouteTest, invalid_string_regexes_fail) {
   ASSERT_THROW(
       {
         auto r = make_route("/{{i:.+)}}", {HTTPMethod::GET},
-                            std::function<HTTPResponse(const HTTPRequest&,
-                                                       Optional<int64_t>)>());
+                            std::function<folly::Future<HTTPResponse>(
+                                const HTTPRequest&, Optional<int64_t>)>());
       },
       std::runtime_error);
   ASSERT_THROW(
       {
         auto r = make_route("/{{d:.+)}}", {HTTPMethod::GET},
-                            std::function<HTTPResponse(const HTTPRequest&,
-                                                       Optional<double>)>());
+                            std::function<folly::Future<HTTPResponse>(
+                                const HTTPRequest&, Optional<double>)>());
       },
       std::runtime_error);
   ASSERT_THROW(
       {
-        auto r = make_route(
-            "/{{s:.+)}}", {HTTPMethod::GET},
-            std::function<HTTPResponse(const HTTPRequest&, string)>());
+        auto r = make_route("/{{s:.+)}}", {HTTPMethod::GET},
+                            std::function<folly::Future<HTTPResponse>(
+                                const HTTPRequest&, string)>());
       },
       std::runtime_error);
   ASSERT_THROW(
       {
         auto r = make_route("/{{s?:.+)}}", {HTTPMethod::GET},
-                            std::function<HTTPResponse(const HTTPRequest&,
-                                                       Optional<string>)>());
+                            std::function<folly::Future<HTTPResponse>(
+                                const HTTPRequest&, Optional<string>)>());
       },
       std::runtime_error);
 }
 
 TEST(RouteTest, regex_routes_are_not_static) {
-  auto r =
-      make_route("/{{i}}", {HTTPMethod::GET},
-                 std::function<HTTPResponse(const HTTPRequest&, int64_t)>());
+  auto r = make_route("/{{i}}", {HTTPMethod::GET},
+                      std::function<folly::Future<HTTPResponse>(
+                          const HTTPRequest&, int64_t)>());
   ASSERT_FALSE(r->isStaticRoute());
 }
 
 TEST(RouteTest, static_routes_are_static) {
-  auto r = make_static_route("/", {HTTPMethod::GET},
-                             std::function<HTTPResponse(const HTTPRequest&)>());
+  auto r = make_static_route(
+      "/", {HTTPMethod::GET},
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>());
   ASSERT_TRUE(r->isStaticRoute());
 }
 
 TEST(RouteTest, static_routes_match_exact_strings) {
-  std::function<HTTPResponse(const HTTPRequest&)> f;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> f;
   auto r1 = make_static_route("/\\w+", {HTTPMethod::GET}, f);
   auto r2 = make_static_route("/testing/route", {HTTPMethod::GET}, f);
 
@@ -300,7 +307,7 @@ TEST(RouteTest, static_routes_match_exact_strings) {
 }
 
 TEST(RouteTest, static_routes_reject_invalid_method) {
-  std::function<HTTPResponse(const HTTPRequest&)> f;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> f;
   auto r =
       make_static_route("/testing", {HTTPMethod::GET, HTTPMethod::POST}, f);
   auto request = make_request("/testing", HTTPMethod::PUT);
@@ -312,10 +319,10 @@ TEST(RouteTest, static_routes_work) {
   auto request = make_request("/testing", HTTPMethod::GET);
   string requestPath = "";
 
-  std::function<HTTPResponse(const HTTPRequest&)> f(
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> f(
       [&requestPath](const HTTPRequest& request) mutable {
         requestPath = request.getPath();
-        return HTTPResponse(200);
+        return HTTPResponse::future(200);
       });
   auto r = make_static_route("/testing", {HTTPMethod::GET}, f);
   r->handler(&request.getRawRequest()).handler(std::move(request));
@@ -323,57 +330,59 @@ TEST(RouteTest, static_routes_work) {
 }
 
 struct TestController {
-  static HTTPResponse staticHandler(const HTTPRequest& request) {
-    return HTTPResponse(200, request.getPath());
+  static folly::Future<HTTPResponse> staticHandler(const HTTPRequest& request) {
+    return HTTPResponse::future(200, request.getPath());
   }
-  static HTTPResponse dynamicHandler(const HTTPRequest& request, int64_t i) {
-    return HTTPResponse(200, sformat("{} {}", request.getPath(), i));
+  static folly::Future<HTTPResponse> dynamicHandler(const HTTPRequest& request,
+                                                    int64_t i) {
+    return HTTPResponse::future(200, sformat("{} {}", request.getPath(), i));
   }
 };
 
 TEST(RouteTest, static_routes_take_mutable_callables) {
   int i = 0;
   auto request = make_request("/testing", HTTPMethod::GET);
-  auto r = make_static_route("/testing", {HTTPMethod::GET},
-                             [&i](const HTTPRequest& request) {
-                               i = 5;
-                               return HTTPResponse(200, request.getPath());
-                             });
+  auto r = make_static_route(
+      "/testing", {HTTPMethod::GET}, [&i](const HTTPRequest& request) {
+        i = 5;
+        return HTTPResponse::future(200, request.getPath());
+      });
   auto r3 = make_static_route("/testing", {HTTPMethod::GET},
                               &TestController::staticHandler);
 
-  ASSERT_EQ(
-      "/testing",
-      to_string(
-          r->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ("/testing", to_string(r->handler(&request.getRawRequest())
+                                      .handler(request)
+                                      .get()
+                                      .getBody()));
   ASSERT_EQ(5, i);
 }
 TEST(RouteTest, static_routes_take_all_callables) {
   auto request = make_request("/testing", HTTPMethod::GET);
-  auto r1 = make_static_route("/testing", {HTTPMethod::GET},
-                              std::function<HTTPResponse(const HTTPRequest&)>(
-                                  [](const HTTPRequest& request) {
-                                    return HTTPResponse(200, request.getPath());
-                                  }));
-  auto r2 = make_static_route("/testing", {HTTPMethod::GET},
-                              [](const HTTPRequest& request) {
-                                return HTTPResponse(200, request.getPath());
-                              });
+  auto r1 = make_static_route(
+      "/testing", {HTTPMethod::GET},
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+          [](const HTTPRequest& request) {
+            return HTTPResponse::future(200, request.getPath());
+          }));
+  auto r2 = make_static_route(
+      "/testing", {HTTPMethod::GET}, [](const HTTPRequest& request) {
+        return HTTPResponse::future(200, request.getPath());
+      });
   auto r3 = make_static_route("/testing", {HTTPMethod::GET},
                               &TestController::staticHandler);
 
-  ASSERT_EQ(
-      "/testing",
-      to_string(
-          r1->handler(&request.getRawRequest()).handler(request).getBody()));
-  ASSERT_EQ(
-      "/testing",
-      to_string(
-          r2->handler(&request.getRawRequest()).handler(request).getBody()));
-  ASSERT_EQ(
-      "/testing",
-      to_string(
-          r3->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ("/testing", to_string(r1->handler(&request.getRawRequest())
+                                      .handler(request)
+                                      .get()
+                                      .getBody()));
+  ASSERT_EQ("/testing", to_string(r2->handler(&request.getRawRequest())
+                                      .handler(request)
+                                      .get()
+                                      .getBody()));
+  ASSERT_EQ("/testing", to_string(r3->handler(&request.getRawRequest())
+                                      .handler(request)
+                                      .get()
+                                      .getBody()));
 }
 
 TEST(RouteTest, dynamic_routes_take_mutable_callables) {
@@ -382,45 +391,46 @@ TEST(RouteTest, dynamic_routes_take_mutable_callables) {
   auto r = make_route("/testing/{{i}}", {HTTPMethod::GET},
                       [&j](const HTTPRequest& request, int64_t i) mutable {
                         j = 5;
-                        return HTTPResponse(
+                        return HTTPResponse::future(
                             200, sformat("{} {}", request.getPath(), i));
                       });
 
-  ASSERT_EQ(
-      "/testing/1 1",
-      to_string(
-          r->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ("/testing/1 1", to_string(r->handler(&request.getRawRequest())
+                                          .handler(request)
+                                          .get()
+                                          .getBody()));
   ASSERT_EQ(5, j);
 }
 
 TEST(RouteTest, dynamic_routes_take_all_callables) {
   auto request = make_request("/testing/1", HTTPMethod::GET);
-  auto r1 = make_route("/testing/{{i}}", {HTTPMethod::GET},
-                       std::function<HTTPResponse(const HTTPRequest&, int64_t)>(
-                           [](const HTTPRequest& request, int64_t i) {
-                             return HTTPResponse(
-                                 200, sformat("{} {}", request.getPath(), i));
-                           }));
+  auto r1 = make_route(
+      "/testing/{{i}}", {HTTPMethod::GET},
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&, int64_t)>(
+          [](const HTTPRequest& request, int64_t i) {
+            return HTTPResponse::future(200,
+                                        sformat("{} {}", request.getPath(), i));
+          }));
   auto r2 = make_route("/testing/{{i}}", {HTTPMethod::GET},
                        [](const HTTPRequest& request, int64_t i) {
-                         return HTTPResponse(
+                         return HTTPResponse::future(
                              200, sformat("{} {}", request.getPath(), i));
                        });
   auto r3 = make_route("/testing/{{i}}", {HTTPMethod::GET},
                        &TestController::dynamicHandler);
 
-  ASSERT_EQ(
-      "/testing/1 1",
-      to_string(
-          r1->handler(&request.getRawRequest()).handler(request).getBody()));
-  ASSERT_EQ(
-      "/testing/1 1",
-      to_string(
-          r2->handler(&request.getRawRequest()).handler(request).getBody()));
-  ASSERT_EQ(
-      "/testing/1 1",
-      to_string(
-          r3->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ("/testing/1 1", to_string(r1->handler(&request.getRawRequest())
+                                          .handler(request)
+                                          .get()
+                                          .getBody()));
+  ASSERT_EQ("/testing/1 1", to_string(r2->handler(&request.getRawRequest())
+                                          .handler(request)
+                                          .get()
+                                          .getBody()));
+  ASSERT_EQ("/testing/1 1", to_string(r3->handler(&request.getRawRequest())
+                                          .handler(request)
+                                          .get()
+                                          .getBody()));
 }
 }
 }

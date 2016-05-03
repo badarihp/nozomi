@@ -31,10 +31,11 @@ HTTPRequest make_request(
 
 struct CustomHandler : public proxygen::RequestHandler {
   folly::EventBase* evb_;
-  std::function<HTTPResponse(const HTTPRequest&)> handler;
-  CustomHandler(folly::EventBase* evb,
-                Router* router,
-                std::function<HTTPResponse(const HTTPRequest&)> handler)
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler;
+  CustomHandler(
+      folly::EventBase* evb,
+      Router* router,
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler)
       : evb_(evb), handler(std::move(handler)) {}
   virtual void onRequest(
       std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override {}
@@ -51,7 +52,7 @@ TEST(HTTPHandlerFactoryTest, returns_correct_handler) {
   EventBase evb;
   auto router = make_router(
       {}, make_static_route("/", {HTTPMethod::GET}, [](const auto& r) {
-        return HTTPResponse(200, "Sample string");
+        return HTTPResponse::future(200, "Sample string");
       }));
   Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1);
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
@@ -61,7 +62,8 @@ TEST(HTTPHandlerFactoryTest, returns_correct_handler) {
   factory.onServerStart(&evb);
   auto* handlerPtr = factory.onRequest(nullptr, &rawRequest);
   unique_ptr<RequestHandler> handler(handlerPtr);
-  auto response = static_cast<CustomHandler*>(handlerPtr)->handler(request);
+  auto response =
+      static_cast<CustomHandler*>(handlerPtr)->handler(request).get();
 
   ASSERT_TRUE(handler != nullptr);
   ASSERT_EQ(&evb, static_cast<CustomHandler*>(handlerPtr)->evb_);
@@ -71,8 +73,9 @@ TEST(HTTPHandlerFactoryTest, returns_correct_handler) {
 TEST(HTTPHandlerFactoryTest, passes_event_base_through) {
   EventBase evb;
   auto router = make_router(
-      {}, make_static_route("/", {HTTPMethod::GET},
-                            [](const auto& r) { return HTTPResponse(200); }));
+      {}, make_static_route("/", {HTTPMethod::GET}, [](const auto& r) {
+        return HTTPResponse::future(200);
+      }));
   Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1);
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
   auto request = make_request("/");

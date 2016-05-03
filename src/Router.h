@@ -19,27 +19,30 @@ class Router {
  private:
   std::list<std::unique_ptr<BaseRoute>> staticRoutes_;
   std::list<std::unique_ptr<BaseRoute>> routes_;
-  std::unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
+  std::unordered_map<
+      int,
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
       errorRoutes_;
 
  public:
-  Router(
-      std::unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
-          errorRoutes,
-      std::vector<std::unique_ptr<BaseRoute>> routes);
+  Router(std::unordered_map<
+             int,
+             std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
+             errorRoutes,
+         std::vector<std::unique_ptr<BaseRoute>> routes);
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> getHandler(
       const proxygen::HTTPMessage* request) const;
-  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> getErrorHandler(
-      int statusCode) const;
+  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
+  getErrorHandler(int statusCode) const;
   // TODO: Streaming
   // TODO: Option to automatically append a trailing slash
 };
 
 template <typename... Routes>
-Router make_router(
-    std::unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
-        errorRoutes,
-    std::unique_ptr<Routes>... routes) {
+Router make_router(std::unordered_map<int,
+                                      std::function<folly::Future<HTTPResponse>(
+                                          const HTTPRequest&)>> errorRoutes,
+                   std::unique_ptr<Routes>... routes) {
   std::vector<std::unique_ptr<BaseRoute>> newRoutes;
   newRoutes.reserve(sizeof...(Routes));
   push_back_move(newRoutes, std::move(routes)...);
@@ -47,10 +50,10 @@ Router make_router(
 }
 
 template <typename... Routes>
-Router make_router(
-    std::unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
-        errorRoutes,
-    Routes&&... routes) {
+Router make_router(std::unordered_map<int,
+                                      std::function<folly::Future<HTTPResponse>(
+                                          const HTTPRequest&)>> errorRoutes,
+                   Routes&&... routes) {
   std::vector<std::unique_ptr<BaseRoute>> newRoutes;
   newRoutes.reserve(sizeof...(Routes));
   push_back_move(newRoutes, std::move(routes)...);

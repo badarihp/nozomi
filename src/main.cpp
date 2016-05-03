@@ -55,11 +55,12 @@ int main() {
                        200, folly::sformat("hello, world: {}", i));
                  }),
       make_route("/test/{{i}}", {Method::GET}, &SampleController::method),
-      make_static_route("/img/1", {Method::GET},
-                        std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
-                            [](const HTTPRequest& request) {
-                              return HTTPResponse::future(200, "hello, world");
-                            })),
+      make_static_route(
+          "/img/1", {Method::GET},
+          std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+              [](const HTTPRequest& request) {
+                return HTTPResponse::future(200, "hello, world");
+              })),
       make_static_route("/img/2", {Method::GET},
                         [](const HTTPRequest& request) {
                           return HTTPResponse::future(200, "hello, world: {}");

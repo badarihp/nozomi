@@ -6,10 +6,10 @@ using std::unordered_map;
 
 namespace sakura {
 
-Router::Router(
-    unordered_map<int, std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
-        errorRoutes,
-    vector<unique_ptr<BaseRoute>> routes)
+Router::Router(unordered_map<int,
+                             std::function<folly::Future<HTTPResponse>(
+                                 const HTTPRequest&)>> errorRoutes,
+               vector<unique_ptr<BaseRoute>> routes)
     : errorRoutes_(std::move(errorRoutes)) {
   for (auto& route : routes) {
     if (route->isStaticRoute()) {
@@ -20,8 +20,8 @@ Router::Router(
   }
 }
 
-std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> Router::getHandler(
-    const proxygen::HTTPMessage* request) const {
+std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
+Router::getHandler(const proxygen::HTTPMessage* request) const {
   // Check static routes first, then dynamic ones
   bool methodNotFound = false;
   for (const auto& route : staticRoutes_) {
@@ -57,8 +57,8 @@ std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> Router::getHandle
   }
 }
 
-std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> Router::getErrorHandler(
-    int statusCode) const {
+std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
+Router::getErrorHandler(int statusCode) const {
   auto route = errorRoutes_.find(statusCode);
   if (route == errorRoutes_.end()) {
     return [statusCode](const HTTPRequest& request) {

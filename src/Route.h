@@ -11,8 +11,8 @@
 #include "src/Util.h"
 
 #include <boost/regex.hpp>
-#include <folly/futures/Future.h>
 #include <folly/Optional.h>
+#include <folly/futures/Future.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
 namespace sakura {
@@ -34,8 +34,8 @@ class Route : public BaseRoute {
 template <typename... HandlerArgs>
 inline auto make_route(std::string pattern,
                        std::unordered_set<proxygen::HTTPMethod> methods,
-                       folly::Future<HTTPResponse> (*handler)(const HTTPRequest&,
-                                               HandlerArgs...)) {
+                       folly::Future<HTTPResponse> (*handler)(
+                           const HTTPRequest&, HandlerArgs...)) {
   return std::make_unique<Route<decltype(handler), HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }

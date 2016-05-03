@@ -123,17 +123,17 @@ inline T get_handler_args(const boost::smatch& matches) {
 
 template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
 inline folly::Future<HTTPResponse> call_handler(std::index_sequence<N...>,
-                                 type_sequence<HandlerArgs...>,
-                                 HandlerType& f,
-                                 const HTTPRequest& request,
-                                 const boost::smatch& matches) {
+                                                type_sequence<HandlerArgs...>,
+                                                HandlerType& f,
+                                                const HTTPRequest& request,
+                                                const boost::smatch& matches) {
   return f(request, get_handler_args<N, HandlerArgs>(matches)...);
 }
 
 template <typename HandlerType, typename... HandlerArgs>
 inline folly::Future<HTTPResponse> call_handler(HandlerType& f,
-                                 const HTTPRequest& request,
-                                 const boost::smatch& matches) {
+                                                const HTTPRequest& request,
+                                                const boost::smatch& matches) {
   return call_handler(std::index_sequence_for<HandlerArgs...>{},
                       type_sequence<HandlerArgs...>{}, f, request, matches);
 }
@@ -177,20 +177,21 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
     return RouteMatch(RouteMatchResult::MethodNotMatched);
   }
 
-  return RouteMatch(RouteMatchResult::RouteMatched,
-                    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([
-                      path = std::move(path), matches = std::move(matches), this
-                    ](const HTTPRequest& request) mutable {
-                      // We have to hold onto the original path variable because
-                      // the matches object
-                      // retains a reference to the string that was matched on.
-                      // We use a unique_ptr
-                      // because there's no absolute guarantee that an std::move
-                      // won't invalidate the
-                      // reference to the original string.
-                      return route::call_handler<HandlerType, HandlerArgs...>(
-                          handler_, request, matches);
-                    }));
+  return RouteMatch(
+      RouteMatchResult::RouteMatched,
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([
+        path = std::move(path), matches = std::move(matches), this
+      ](const HTTPRequest& request) mutable {
+        // We have to hold onto the original path variable because
+        // the matches object
+        // retains a reference to the string that was matched on.
+        // We use a unique_ptr
+        // because there's no absolute guarantee that an std::move
+        // won't invalidate the
+        // reference to the original string.
+        return route::call_handler<HandlerType, HandlerArgs...>(
+            handler_, request, matches);
+      }));
 }
 
 template <typename HandlerType, typename... HandlerArgs>

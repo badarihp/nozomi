@@ -22,9 +22,10 @@ enum RouteMatchResult {
  * why it doesn't
  */
 struct RouteMatch {
-  RouteMatch(RouteMatchResult result,
-             std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler =
-                 std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>())
+  RouteMatch(
+      RouteMatchResult result,
+      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler =
+          std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>())
       : result(result), handler(std::move(handler)) {}
 
   const RouteMatchResult result;

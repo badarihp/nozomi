@@ -65,8 +65,8 @@ struct CustomHandler : public virtual proxygen::ResponseHandler {
 };
 
 struct HTTPHandlerTest : public ::testing::Test {
-  function<HTTPResponse(const HTTPRequest&)> errorHandler;
-  function<HTTPResponse(const HTTPRequest&)> handler;
+  function<folly::Future<HTTPResponse>(const HTTPRequest&)> errorHandler;
+  function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler;
 
   std::unique_ptr<HTTPMessage> requestMessage;
   std::unique_ptr<IOBuf> body;
@@ -78,17 +78,18 @@ struct HTTPHandlerTest : public ::testing::Test {
   HTTPHandlerTest()
       : requestMessage(std::make_unique<HTTPMessage>()),
         body(IOBuf::copyBuffer("the body")),
-        router(
-            make_router({{500, function<HTTPResponse(const HTTPRequest&)>(
-                                   [this](const HTTPRequest& request) {
-                                     return errorHandler(request);
-                                   })}},
-                        make_route("/",
-                                   {proxygen::HTTPMethod::GET},
-                                   function<HTTPResponse(const HTTPRequest&)>(
-                                       [this](const HTTPRequest& request) {
-                                         return handler(request);
-                                       })))),
+        router(make_router(
+            {{500, function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+                       [this](const HTTPRequest& request) {
+                         return errorHandler(request);
+                       })}},
+            make_route(
+                "/",
+                {proxygen::HTTPMethod::GET},
+                function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+                    [this](const HTTPRequest& request) {
+                      return handler(request);
+                    })))),
         httpHandler(
             &evb,
             &router,
@@ -105,7 +106,9 @@ TEST_F(HTTPHandlerTest, sends_response) {
   std::string capturedHeader;
   std::string capturedBody;
 
-  errorHandler = [](const HTTPRequest& request) { return HTTPResponse(504); };
+  errorHandler = [](const HTTPRequest& request) {
+    return HTTPResponse::future(504);
+  };
   handler = [&](const HTTPRequest& request) {
     capturedHeader = request.getHeaders()["Content-Type"].value();
     capturedBody = request.getBodyAsString();
@@ -172,7 +175,9 @@ TEST_F(HTTPHandlerTest, sends_empty_buffer_when_no_body_sent) {
   std::string capturedHeader;
   std::string capturedBody;
 
-  errorHandler = [](const HTTPRequest& request) { return HTTPResponse(504); };
+  errorHandler = [](const HTTPRequest& request) {
+    return HTTPResponse::future(504);
+  };
   handler = [&](const HTTPRequest& request) {
     capturedHeader = request.getHeaders()["Content-Type"].value();
     capturedBody = request.getBodyAsString();
