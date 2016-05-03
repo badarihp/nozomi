@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <folly/Format.h>
 #include <folly/Optional.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
@@ -10,6 +11,7 @@
 
 using namespace std;
 using folly::Optional;
+using folly::sformat;
 using proxygen::HTTPMethod;
 
 namespace sakura {
@@ -318,6 +320,73 @@ TEST(RouteTest, static_routes_work) {
   auto r = make_static_route("/testing", {HTTPMethod::GET}, f);
   r->handler(&request.getRawRequest()).handler(std::move(request));
   ASSERT_EQ(requestPath, "/testing");
+}
+
+struct TestController {
+  static HTTPResponse staticHandler(const HTTPRequest& request) {
+    return HTTPResponse(200, request.getPath());
+  }
+  static HTTPResponse dynamicHandler(const HTTPRequest& request, int64_t i) {
+    return HTTPResponse(200, sformat("{} {}", request.getPath(), i));
+  }
+};
+
+TEST(RouteTest, static_routes_take_all_callables) {
+  auto request = make_request("/testing", HTTPMethod::GET);
+  auto r1 = make_static_route("/testing", {HTTPMethod::GET},
+                              std::function<HTTPResponse(const HTTPRequest&)>(
+                                  [](const HTTPRequest& request) {
+                                    return HTTPResponse(200, request.getPath());
+                                  }));
+  auto r2 = make_static_route("/testing", {HTTPMethod::GET},
+                              [](const HTTPRequest& request) {
+                                return HTTPResponse(200, request.getPath());
+                              });
+  auto r3 = make_static_route("/testing", {HTTPMethod::GET},
+                              &TestController::staticHandler);
+
+  ASSERT_EQ(
+      "/testing",
+      to_string(
+          r1->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(
+      "/testing",
+      to_string(
+          r2->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(
+      "/testing",
+      to_string(
+          r3->handler(&request.getRawRequest()).handler(request).getBody()));
+}
+
+TEST(RouteTest, dynamic_routes_take_all_callables) {
+  auto request = make_request("/testing/1", HTTPMethod::GET);
+  auto r1 = make_route("/testing/{{i}}", {HTTPMethod::GET},
+                       std::function<HTTPResponse(const HTTPRequest&, int64_t)>(
+                           [](const HTTPRequest& request, int64_t i) {
+                             return HTTPResponse(
+                                 200, sformat("{} {}", request.getPath(), i));
+                           }));
+  auto r2 = make_route("/testing/{{i}}", {HTTPMethod::GET},
+                       [](const HTTPRequest& request, int64_t i) {
+                         return HTTPResponse(
+                             200, sformat("{} {}", request.getPath(), i));
+                       });
+  auto r3 = make_route("/testing/{{i}}", {HTTPMethod::GET},
+                       &TestController::dynamicHandler);
+
+  ASSERT_EQ(
+      "/testing/1 1",
+      to_string(
+          r1->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(
+      "/testing/1 1",
+      to_string(
+          r2->handler(&request.getRawRequest()).handler(request).getBody()));
+  ASSERT_EQ(
+      "/testing/1 1",
+      to_string(
+          r3->handler(&request.getRawRequest()).handler(request).getBody()));
 }
 }
 }

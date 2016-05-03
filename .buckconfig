@@ -9,7 +9,7 @@ cxxflags = -std=c++14 -Wextra -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -g -fno-omit-fram
 gtest_dep=//third-party/googletest/googletest:google-test
 
 sodir.system = /usr/lib/x86_64-linux-gnu
-sodir.local = /opt/facebook/lib
+sodir.local=/usr/local/lib
 
 [python#py3]
 interpreter = /usr/bin/python3

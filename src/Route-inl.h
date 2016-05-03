@@ -164,6 +164,7 @@ parse_route_pattern(const std::string& route);
 template <typename HandlerType, typename... HandlerArgs>
 RouteMatch Route<HandlerType, HandlerArgs...>::handler(
     const proxygen::HTTPMessage* request) const {
+  DCHECK(request != nullptr) << "Request must not be null";
   boost::smatch matches;
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
   // TODO: Make this shared when using folly::function
