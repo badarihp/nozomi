@@ -124,14 +124,14 @@ inline T get_handler_args(const boost::smatch& matches) {
 template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
 inline HTTPResponse call_handler(std::index_sequence<N...>,
                                  type_sequence<HandlerArgs...>,
-                                 const HandlerType& f,
+                                 HandlerType& f,
                                  const HTTPRequest& request,
                                  const boost::smatch& matches) {
   return f(request, get_handler_args<N, HandlerArgs>(matches)...);
 }
 
 template <typename HandlerType, typename... HandlerArgs>
-inline HTTPResponse call_handler(const HandlerType& f,
+inline HTTPResponse call_handler(HandlerType& f,
                                  const HTTPRequest& request,
                                  const boost::smatch& matches) {
   return call_handler(std::index_sequence_for<HandlerArgs...>{},

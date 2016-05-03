@@ -50,8 +50,9 @@ TEST(RouteTest, fails_if_path_has_different_args_than_func) {
 template <typename... Args>
 void testRouteDoesntMatch(string requestPath, string pattern) {
   auto request = make_request(requestPath, HTTPMethod::GET);
-  std::function<HTTPResponse(const HTTPRequest&, Args...)> f([](
-      const HTTPRequest& request, Args... args) { return HTTPResponse(200); });
+  auto f = [](const HTTPRequest& request, Args... args) {
+    return HTTPResponse(200);
+  };
   auto r = make_route(pattern, {HTTPMethod::GET}, f);
 
   auto match = r->handler(&request.getRawRequest());
@@ -90,9 +91,8 @@ void testRouteMatching(string requestPath,
   std::tuple<Args...> result;
   bool ranFunction = false;
   auto request = make_request(requestPath, HTTPMethod::GET);
-  std::function<HTTPResponse(const HTTPRequest&, Args...)> f = [&result,
-                                                                &ranFunction](
-      const HTTPRequest& request, Args... args) mutable {
+  auto f = [&result, &ranFunction](const HTTPRequest& request,
+                                   Args... args) mutable {
     result = std::make_tuple<Args...>(std::move(args)...);
     ranFunction = true;
     return HTTPResponse(200);
@@ -332,10 +332,10 @@ struct TestController {
 };
 
 TEST(RouteTest, static_routes_take_mutable_callables) {
-  auto i = 0;
+  int i = 0;
   auto request = make_request("/testing", HTTPMethod::GET);
   auto r = make_static_route("/testing", {HTTPMethod::GET},
-                             [](const HTTPRequest& request) {
+                             [&i](const HTTPRequest& request) {
                                i = 5;
                                return HTTPResponse(200, request.getPath());
                              });
@@ -377,11 +377,11 @@ TEST(RouteTest, static_routes_take_all_callables) {
 }
 
 TEST(RouteTest, dynamic_routes_take_mutable_callables) {
-  int i = 0;
+  int j = 0;
   auto request = make_request("/testing/1", HTTPMethod::GET);
   auto r = make_route("/testing/{{i}}", {HTTPMethod::GET},
-                      [&i](const HTTPRequest& request, int64_t i) mutable {
-                        i = 5;
+                      [&j](const HTTPRequest& request, int64_t i) mutable {
+                        j = 5;
                         return HTTPResponse(
                             200, sformat("{} {}", request.getPath(), i));
                       });
@@ -390,7 +390,7 @@ TEST(RouteTest, dynamic_routes_take_mutable_callables) {
       "/testing/1 1",
       to_string(
           r->handler(&request.getRawRequest()).handler(request).getBody()));
-  ASSERT_EQ(5, i);
+  ASSERT_EQ(5, j);
 }
 
 TEST(RouteTest, dynamic_routes_take_all_callables) {
