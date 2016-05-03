@@ -67,19 +67,21 @@ void HTTPHandler::onEOM() noexcept {
   // TODO: This request probably needs to be a shared_ptr instead
   //      when I get to the point that I have futures. Async gets
   //      tricky with just references
-  // TODO: Get rid fo the '.get()' calls, and store the future,
-  //       sending only after we complete the future or timeout
-  auto request = HTTPRequest(std::move(message_), std::move(body_));
-  try {
-    sendResponse(handler_(request).get());
-  } catch (const std::exception& e) {
-    try {
-      LOG(INFO) << "Error: " << e.what();
-      sendResponse(router_->getErrorHandler(500)(request).get());
-    } catch (const std::exception& e) {
-      sendResponse(HTTPResponse(500, "Unknown error"));
-    }
-  }
+  // TODO: Future timeout
+  // TODO: This needs to be run with the correct executor, but evb_
+  //       is apparently not it. More reading is necesary
+  auto request =
+      std::make_shared<HTTPRequest>(std::move(message_), std::move(body_));
+  response_ = handler_(*request)
+                  .onError([this, request](const std::exception& e) {
+                    return router_->getErrorHandler(500)(*request).onError(
+                        [](const std::exception& e) {
+                          return HTTPResponse(500, "Unknown error");
+                        });
+                  })
+                  .then([this](const HTTPResponse& response) {
+                    sendResponse(response);
+                  });
 };
 
 /**

@@ -18,6 +18,7 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
   std::unique_ptr<proxygen::HTTPMessage> message_;
   std::unique_ptr<folly::IOBuf> body_;
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler_;
+  folly::Future<folly::Unit> response_;
 
  public:
   HTTPHandler(
