@@ -4,17 +4,17 @@
 #include <unordered_map>
 #include <vector>
 
-#include <folly/io/async/EventBase.h>
 #include <folly/io/IOBuf.h>
+#include <folly/io/async/EventBase.h>
 #include <proxygen/httpserver/ResponseHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <wangle/acceptor/TransportInfo.h>
 
-#include "src/Route.h"
-#include "src/StaticRoute.h"
 #include "src/HTTPHandler.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
+#include "src/Route.h"
+#include "src/StaticRoute.h"
 #include "src/StringUtils.h"
 
 using folly::IOBuf;

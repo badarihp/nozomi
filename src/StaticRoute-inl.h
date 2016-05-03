@@ -1,7 +1,7 @@
 #pragma once
 namespace sakura {
 
-template<typename HandlerType>
+template <typename HandlerType>
 StaticRoute<HandlerType>::StaticRoute(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
@@ -9,7 +9,7 @@ StaticRoute<HandlerType>::StaticRoute(
     : BaseRoute(std::move(pattern), std::move(methods), true),
       handler_(std::move(handler)) {}
 
-template<typename HandlerType>
+template <typename HandlerType>
 RouteMatch StaticRoute<HandlerType>::handler(
     const proxygen::HTTPMessage* request) {
   DCHECK(request != nullptr);
@@ -22,7 +22,7 @@ RouteMatch StaticRoute<HandlerType>::handler(
   }
   return RouteMatch(
       RouteMatchResult::RouteMatched,
-      std::function<HTTPResponse(const HTTPRequest&)>(
-          [this](const HTTPRequest& request) mutable { return handler_(request); }));
+      std::function<HTTPResponse(const HTTPRequest&)>([this](
+          const HTTPRequest& request) mutable { return handler_(request); }));
 }
 }

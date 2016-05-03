@@ -31,13 +31,12 @@ class Route : public BaseRoute {
 };
 
 template <typename... HandlerArgs>
-inline auto make_route(
-    std::string pattern,
-    std::unordered_set<proxygen::HTTPMethod> methods,
-    HTTPResponse(*handler)(const HTTPRequest&, HandlerArgs...)) {
+inline auto make_route(std::string pattern,
+                       std::unordered_set<proxygen::HTTPMethod> methods,
+                       HTTPResponse (*handler)(const HTTPRequest&,
+                                               HandlerArgs...)) {
   return std::make_unique<Route<decltype(handler), HandlerArgs...>>(
-    std::move(pattern), std::move(methods), std::move(handler));
-
+      std::move(pattern), std::move(methods), std::move(handler));
 }
 
 template <typename HandlerType, typename Request, typename... HandlerArgs>
@@ -55,10 +54,9 @@ inline auto make_route(std::string pattern,
                        std::unordered_set<proxygen::HTTPMethod> methods,
                        HandlerType handler) {
   auto types = make_type_sequence(handler);
-  return make_route(std::move(pattern), std::move(methods),
-                              std::move(handler), types);
+  return make_route(std::move(pattern), std::move(methods), std::move(handler),
+                    types);
 }
-
 }
 
 #include "src/Route-inl.h"

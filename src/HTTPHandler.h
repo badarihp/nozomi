@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <folly/io/async/EventBase.h>
 #include <folly/io/IOBuf.h>
+#include <folly/io/async/EventBase.h>
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 
@@ -20,7 +20,9 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
   std::function<HTTPResponse(const HTTPRequest&)> handler_;
 
  public:
-  HTTPHandler(folly::EventBase* evb, Router* router, std::function<HTTPResponse(const HTTPRequest&)> handler);
+  HTTPHandler(folly::EventBase* evb,
+              Router* router,
+              std::function<HTTPResponse(const HTTPRequest&)> handler);
   void sendResponse(const HTTPResponse& response);
 
   /**
@@ -64,7 +66,7 @@ class HTTPHandler : public virtual proxygen::RequestHandler {
    * yourself.
    */
   virtual void onError(proxygen::ProxygenError err) noexcept override;
-  
-  virtual ~HTTPHandler() noexcept { }
+
+  virtual ~HTTPHandler() noexcept {}
 };
 }

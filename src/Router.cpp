@@ -7,7 +7,8 @@ using std::unordered_map;
 namespace sakura {
 
 Router::Router(
-    unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>> errorRoutes,
+    unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
+        errorRoutes,
     vector<unique_ptr<BaseRoute>> routes)
     : errorRoutes_(std::move(errorRoutes)) {
   for (auto& route : routes) {
@@ -60,8 +61,9 @@ std::function<HTTPResponse(const HTTPRequest&)> Router::getErrorHandler(
     int statusCode) const {
   auto route = errorRoutes_.find(statusCode);
   if (route == errorRoutes_.end()) {
-    return
-        [statusCode](const HTTPRequest& request) { return HTTPResponse(statusCode); };
+    return [statusCode](const HTTPRequest& request) {
+      return HTTPResponse(statusCode);
+    };
   } else {
     return [&handler = route->second](const HTTPRequest& request) {
       return handler(request);

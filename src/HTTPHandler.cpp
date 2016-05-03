@@ -17,9 +17,12 @@ HTTPHandler::HTTPHandler(
     EventBase* evb,
     Router* router,
     std::function<HTTPResponse(const HTTPRequest&)> handler)
-    : evb_(evb), router_(router), handler_(std::move(handler)), body_(IOBuf::create(0)) { 
-DCHECK(evb != nullptr);
-DCHECK(router != nullptr);
+    : evb_(evb),
+      router_(router),
+      handler_(std::move(handler)),
+      body_(IOBuf::create(0)) {
+  DCHECK(evb != nullptr);
+  DCHECK(router != nullptr);
 }
 
 void HTTPHandler::sendResponse(const HTTPResponse& response) {
@@ -85,7 +88,7 @@ void HTTPHandler::onEOM() noexcept {
  * received, `downstream_` should be considered invalid.
  */
 void HTTPHandler::requestComplete() noexcept {
-  //TODO: When moved to futures, the delete needs to be conditional
+  // TODO: When moved to futures, the delete needs to be conditional
   //      on whether the response has been sent
   delete this;
 };
@@ -100,7 +103,7 @@ void HTTPHandler::requestComplete() noexcept {
  * yourself.
  */
 void HTTPHandler::onError(ProxygenError err) noexcept {
-  //TODO: When moved to futures, the delete needs to be conditional
+  // TODO: When moved to futures, the delete needs to be conditional
   //      on whether the response has been sent
   delete this;
 };

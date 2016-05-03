@@ -11,7 +11,7 @@
 
 namespace sakura {
 
-template<typename HandlerType>
+template <typename HandlerType>
 class StaticRoute : public BaseRoute {
   // TODO: Streaming caller
  private:
@@ -25,13 +25,13 @@ class StaticRoute : public BaseRoute {
   virtual RouteMatch handler(const proxygen::HTTPMessage* request) override;
 };
 
-template<typename HandlerType>
+template <typename HandlerType>
 inline std::unique_ptr<BaseRoute> make_static_route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
     HandlerType handler) {
-  return std::make_unique<StaticRoute<HandlerType>>(std::move(pattern), std::move(methods),
-                                       std::move(handler));
+  return std::make_unique<StaticRoute<HandlerType>>(
+      std::move(pattern), std::move(methods), std::move(handler));
 }
 }
 

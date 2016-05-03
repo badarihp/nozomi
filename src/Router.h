@@ -8,9 +8,9 @@
 #include <boost/regex.hpp>
 #include <proxygen/lib/http/HTTPMessage.h>
 
+#include "src/BaseRoute.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
-#include "src/BaseRoute.h"
 #include "src/Util.h"
 
 namespace sakura {
@@ -23,12 +23,14 @@ class Router {
       errorRoutes_;
 
  public:
-  Router(std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
-             errorRoutes,
-         std::vector<std::unique_ptr<BaseRoute>> routes);
+  Router(
+      std::unordered_map<int, std::function<HTTPResponse(const HTTPRequest&)>>
+          errorRoutes,
+      std::vector<std::unique_ptr<BaseRoute>> routes);
   std::function<HTTPResponse(const HTTPRequest&)> getHandler(
       const proxygen::HTTPMessage* request) const;
-  std::function<HTTPResponse(const HTTPRequest&)> getErrorHandler(int statusCode) const;
+  std::function<HTTPResponse(const HTTPRequest&)> getErrorHandler(
+      int statusCode) const;
   // TODO: Streaming
   // TODO: Option to automatically append a trailing slash
 };
