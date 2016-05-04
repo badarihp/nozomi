@@ -76,6 +76,11 @@ HTTPResponse::HTTPResponse(
   }
 }
 
+HTTPResponse::HTTPResponse() {
+  response_.setStatusCode(200);
+  body_ = IOBuf::create(0);
+}
+
 HTTPResponse::HTTPResponse(int16_t statusCode) {
   response_.setStatusCode(statusCode);
   body_ = IOBuf::create(0);

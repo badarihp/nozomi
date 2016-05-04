@@ -21,6 +21,7 @@ class HTTPResponse {
   std::unique_ptr<folly::IOBuf> body_;
 
  public:
+  HTTPResponse();
   HTTPResponse(int16_t statusCode,
                const folly::dynamic& body,
                std::unordered_map<std::string, std::string> headers);

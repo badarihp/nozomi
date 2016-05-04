@@ -1,6 +1,8 @@
 #include "src/HTTPHandler.h"
 
+#include <folly/io/async/EventBaseManager.h>
 #include <proxygen/httpserver/ResponseBuilder.h>
+#include <wangle/concurrent/GlobalExecutor.h>
 
 #include <glog/logging.h>
 
@@ -12,6 +14,7 @@ using proxygen::HTTPMessage;
 using proxygen::ProxygenError;
 using proxygen::ResponseBuilder;
 
+//TODO: Tests need to be updated, and this needs to be injectable
 namespace sakura {
 HTTPHandler::HTTPHandler(
     EventBase* evb,
@@ -64,24 +67,34 @@ void HTTPHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
  * Invoked when we finish receiving the body.
  */
 void HTTPHandler::onEOM() noexcept {
-  // TODO: This request probably needs to be a shared_ptr instead
-  //      when I get to the point that I have futures. Async gets
-  //      tricky with just references
   // TODO: Future timeout
-  // TODO: This needs to be run with the correct executor, but evb_
-  //       is apparently not it. More reading is necesary
-  auto request =
-      std::make_shared<HTTPRequest>(std::move(message_), std::move(body_));
-  response_ = handler_(*request)
-                  .onError([this, request](const std::exception& e) {
-                    return router_->getErrorHandler(500)(*request).onError(
-                        [](const std::exception& e) {
-                          return HTTPResponse(500, "Unknown error");
-                        });
-                  })
-                  .then([this](const HTTPResponse& response) {
-                    sendResponse(response);
-                  });
+  request_ = HTTPRequest(std::move(message_), std::move(body_));
+
+  /*
+   * We have to pull in the evb from the EventBaseManager because the evb
+   * that we're handed in the factory is not the one that we need to use to
+   * make responses. Also, when we make responses, the response builder /
+   * response handler calls "runInLoop", which will break if we're running
+   * in the wrong thread.
+   */
+  auto* evb = folly::EventBaseManager::get()->getEventBase();
+//TODO: Tests
+  try {
+    response_ = via(wangle::getIOExecutor().get(),
+                    [this]() { return handler_(*request_); })
+                    .onError([this](const std::exception& e) {
+                      return router_->getErrorHandler(500)(*request_).onError(
+                          [](const std::exception& e) {
+                            return HTTPResponse(500, "Unknown error");
+                          });
+                    })
+                    .then(evb, [this, evb](const HTTPResponse& response) {
+                      sendResponse(response);
+                    });
+  } catch (const std::exception& e) {
+    response_ = via(
+        evb, [this]() { sendResponse(HTTPResponse(500, "Unknown error")); });
+  }
 };
 
 /**
@@ -92,8 +105,9 @@ void HTTPHandler::onEOM() noexcept {
  * received, `downstream_` should be considered invalid.
  */
 void HTTPHandler::requestComplete() noexcept {
-  // TODO: When moved to futures, the delete needs to be conditional
-  //      on whether the response has been sent
+  // This is not called until after the response is sent,
+  // so deleting here is fine. This is the pattern that's
+  // used in all of the proxygen example code
   delete this;
 };
 
@@ -106,9 +120,5 @@ void HTTPHandler::requestComplete() noexcept {
  * No more callbacks will be invoked after this. You should clean up after
  * yourself.
  */
-void HTTPHandler::onError(ProxygenError err) noexcept {
-  // TODO: When moved to futures, the delete needs to be conditional
-  //      on whether the response has been sent
-  delete this;
-};
+void HTTPHandler::onError(ProxygenError err) noexcept { delete this; };
 }

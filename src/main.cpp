@@ -8,8 +8,10 @@
 #include "src/StaticRoute.h"
 
 #include <folly/futures/Future.h>
+#include <folly/futures/Future.h>
 #include <proxygen/httpserver/HTTPServer.h>
 #include <proxygen/httpserver/SignalHandler.h>
+#include <wangle/concurrent/GlobalExecutor.h>
 using namespace std;
 using namespace sakura;
 using Method = proxygen::HTTPMethod;
@@ -24,15 +26,18 @@ struct SampleController {
   }
 };
 
-int main() {
+int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
-      {},
-      make_route("/", {Method::GET},
-                 std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
-                     [](const HTTPRequest& request) {
-                       return HTTPResponse::future(200, "hello, world");
-                     })),
+      {}, make_route(
+              "/", {Method::GET},
+              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+                  [](const HTTPRequest& request) {
+                    return folly::via(wangle::getIOExecutor().get()).then([]() {
+                      sleep(1);
+                      return HTTPResponse::future(200, "hello, world");
+                    });
+                  })),
       make_static_route("/test", {Method::GET},
                         [&a](const HTTPRequest& request) mutable {
                           a++;
@@ -65,6 +70,7 @@ int main() {
                         [](const HTTPRequest& request) {
                           return HTTPResponse::future(200, "hello, world: {}");
                         }));
+  google::ParseCommandLineFlags(&argc, &argv, true);
   Config config({make_tuple("0.0.0.0", 8080, Config::Protocol::HTTP)}, 2);
   Server server(config, std::move(router));
   auto started = server.start().get();
