@@ -5,32 +5,12 @@
 
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
+#include "src/RouteMatch.h"
 
 #include <folly/Optional.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
 namespace sakura {
-
-enum RouteMatchResult {
-  PathNotMatched,    // Path didn't match
-  MethodNotMatched,  // Path matched, method didn't
-  RouteMatched,      // The route matched entirely
-};
-
-/*
- * Determines whether a Route matches a given pattern, and if not,
- * why it doesn't
- */
-struct RouteMatch {
-  RouteMatch(
-      RouteMatchResult result,
-      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler =
-          std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>())
-      : result(result), handler(std::move(handler)) {}
-
-  const RouteMatchResult result;
-  const std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler;
-};
 
 class BaseRoute {
  protected:

@@ -30,7 +30,9 @@ class Router {
              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
              errorRoutes,
          std::vector<std::unique_ptr<BaseRoute>> routes);
-  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> getHandler(
+//  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
+RouteMatch 
+getHandler(
       const proxygen::HTTPMessage* request) const;
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
   getErrorHandler(int statusCode) const;
