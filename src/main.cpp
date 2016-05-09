@@ -30,8 +30,8 @@ struct SampleController {
 int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
-      {}, make_streaming_route("/.*", {Method::GET},
-                               []() { return new StreamingFileHandler(); })
+      {}, make_static_route("/.*", {Method::GET},
+                            []() { return new StreamingFileHandler(); })
       /*
             make_route(
                     "/", {Method::GET},

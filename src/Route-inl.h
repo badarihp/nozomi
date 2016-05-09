@@ -188,7 +188,6 @@ struct RouteMatchMaker<HandlerType, true, HandlerArgs...> {
   inline RouteMatch operator()(std::shared_ptr<const std::string>& path,
                                boost::smatch& matches,
                                HandlerType& handler) {
-    LOG(INFO) << "HERE";
     // TODO: Fill this out properly
     return RouteMatch(
         RouteMatchResult::RouteMatched,
