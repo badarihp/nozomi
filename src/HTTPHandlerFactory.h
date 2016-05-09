@@ -50,11 +50,12 @@ class HTTPHandlerFactory : public virtual proxygen::RequestHandlerFactory {
                                       proxygen::HTTPMessage* message) noexcept {
     DCHECK(message != nullptr);
     auto routeMatch = router_.getHandler(message);
-    //TODO: Error handling if streamingHandler() blows up, or if somehow neither
+    // TODO: Error handling if streamingHandler() blows up, or if somehow
+    // neither
     //      of those two handlers are set
-    if(routeMatch.handler) {
+    if (routeMatch.handler) {
       return new HandlerType(evb_, &router_, std::move(routeMatch.handler));
-    } else if(routeMatch.streamingHandler) {
+    } else if (routeMatch.streamingHandler) {
       return routeMatch.streamingHandler();
     }
   }

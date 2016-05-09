@@ -8,6 +8,7 @@
 #include "src/EnumHash.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
+#include "src/StreamingHTTPHandler.h"
 #include "src/Util.h"
 
 #include <boost/regex.hpp>
@@ -37,6 +38,16 @@ inline auto make_route(std::string pattern,
                        folly::Future<HTTPResponse> (*handler)(
                            const HTTPRequest&, HandlerArgs...)) {
   return std::make_unique<Route<decltype(handler), HandlerArgs...>>(
+      std::move(pattern), std::move(methods), std::move(handler));
+}
+
+template <typename HandlerType, typename... HandlerArgs>
+inline auto make_streaming_route(
+    std::string pattern,
+    std::unordered_set<proxygen::HTTPMethod> methods,
+    HandlerType handler) {
+  // TODO: This doesn't infer HandlerArgs right now; get that working
+  return std::make_unique<Route<HandlerType, HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 

@@ -24,15 +24,23 @@ create_lib("StreamingHTTPHandler",
     [
         name("HTTPRequest"),
         name("HTTPResponse"),
-        name("Router"),
+    ],
+    additional_headers=[
+        "StreamingHTTPHandler-inl.h",
     ],
 )
 
+create_lib("StreamingFileHandler",
+    [
+        name("StreamingHTTPHandler"),
+    ],
+)
 
 create_lib("RouteMatch",
     [
         name("HTTPRequest"),
         name("HTTPResponse"),
+        name("StreamingHTTPHandler"),
     ],
     header_only=True,
 )
@@ -94,6 +102,7 @@ create_lib("Server", [
     name("Router"),
     name("HTTPHandler"),
     name("HTTPHandlerFactory"),
+    name("StreamingFileHandler"),
     "//system:proxygenhttpserver",
 ])
 

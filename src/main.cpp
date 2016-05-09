@@ -6,6 +6,7 @@
 #include "src/Router.h"
 #include "src/Server.h"
 #include "src/StaticRoute.h"
+#include "src/StreamingFileHandler.h"
 
 #include <folly/futures/Future.h>
 #include <folly/futures/Future.h>
@@ -29,47 +30,55 @@ struct SampleController {
 int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
-      {}, make_route(
-              "/", {Method::GET},
-              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
-                  [](const HTTPRequest& request) {
-                    return folly::via(wangle::getIOExecutor().get()).then([]() {
-                      sleep(1);
-                      return HTTPResponse::future(200, "hello, world");
-                    });
-                  })),
-      make_static_route("/test", {Method::GET},
-                        [&a](const HTTPRequest& request) mutable {
-                          a++;
-                          return HTTPResponse::future(200);
-                        }),
-      make_route("/testing", {Method::GET},
-                 [&a](const HTTPRequest& request) {
-                   a++;
-                   return HTTPResponse::future(200);
-                 }),
-      make_route("/{{i}}", {Method::GET},
-                 [](const HTTPRequest& request, int64_t i) {
-                   return HTTPResponse::future(
-                       200, folly::sformat("hello, world: {}", i));
-                 }),
-      make_route("/test/{{i}}", {Method::GET}, &SampleController::method),
-      make_route("/{{i}}", {Method::GET},
-                 [](const HTTPRequest& request, int64_t i) {
-                   return HTTPResponse::future(
-                       200, folly::sformat("hello, world: {}", i));
-                 }),
-      make_route("/test/{{i}}", {Method::GET}, &SampleController::method),
-      make_static_route(
-          "/img/1", {Method::GET},
-          std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
-              [](const HTTPRequest& request) {
-                return HTTPResponse::future(200, "hello, world");
-              })),
-      make_static_route("/img/2", {Method::GET},
+      {}, make_streaming_route("/.*", {Method::GET},
+                               []() { return new StreamingFileHandler(); })
+      /*
+            make_route(
+                    "/", {Method::GET},
+                    std::function<folly::Future<HTTPResponse>(const
+         HTTPRequest&)>(
                         [](const HTTPRequest& request) {
-                          return HTTPResponse::future(200, "hello, world: {}");
-                        }));
+                          return
+         folly::via(wangle::getIOExecutor().get()).then([]() {
+                            sleep(1);
+                            return HTTPResponse::future(200, "hello, world");
+                          });
+                        })),
+            make_static_route("/test", {Method::GET},
+                              [&a](const HTTPRequest& request) mutable {
+                                a++;
+                                return HTTPResponse::future(200);
+                              }),
+            make_route("/testing", {Method::GET},
+                       [&a](const HTTPRequest& request) {
+                         a++;
+                         return HTTPResponse::future(200);
+                       }),
+            make_route("/{{i}}", {Method::GET},
+                       [](const HTTPRequest& request, int64_t i) {
+                         return HTTPResponse::future(
+                             200, folly::sformat("hello, world: {}", i));
+                       }),
+            make_route("/test/{{i}}", {Method::GET}, &SampleController::method),
+            make_route("/{{i}}", {Method::GET},
+                       [](const HTTPRequest& request, int64_t i) {
+                         return HTTPResponse::future(
+                             200, folly::sformat("hello, world: {}", i));
+                       }),
+            make_route("/test/{{i}}", {Method::GET}, &SampleController::method),
+            make_static_route(
+                "/img/1", {Method::GET},
+                std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(
+                    [](const HTTPRequest& request) {
+                      return HTTPResponse::future(200, "hello, world");
+                    })),
+            make_static_route("/img/2", {Method::GET},
+                              [](const HTTPRequest& request) {
+                                return HTTPResponse::future(200, "hello, world:
+         {}");
+                              })
+      */
+      );
   google::ParseCommandLineFlags(&argc, &argv, true);
   Config config({make_tuple("0.0.0.0", 8080, Config::Protocol::HTTP)}, 2);
   Server server(config, std::move(router));

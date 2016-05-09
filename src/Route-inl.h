@@ -4,6 +4,7 @@
 #include <folly/Format.h>
 
 namespace sakura {
+// TODO: Make this an anonymous namespace?
 namespace route {
 
 enum class RouteParamType {
@@ -121,6 +122,24 @@ inline T get_handler_args(const boost::smatch& matches) {
   return get_handler_args<T>(N, matches);
 }
 
+template <typename... HandlerArgs, std::size_t... N>
+inline void call_streaming_handler(
+    std::index_sequence<N...>,
+    type_sequence<HandlerArgs...>,
+    StreamingHTTPHandler<HandlerArgs...>& handler,
+    const boost::smatch& matches) {
+  return handler.setRequestArgs(get_handler_args<N, HandlerArgs>(matches)...);
+}
+
+template <typename... HandlerArgs>
+inline void call_streaming_handler(
+    StreamingHTTPHandler<HandlerArgs...>& handler,
+    const boost::smatch& matches) {
+  return call_streaming_handler(std::index_sequence_for<HandlerArgs...>{},
+                                type_sequence<HandlerArgs...>{}, handler,
+                                matches);
+}
+
 template <typename HandlerType, typename... HandlerArgs, std::size_t... N>
 inline folly::Future<HTTPResponse> call_handler(std::index_sequence<N...>,
                                                 type_sequence<HandlerArgs...>,
@@ -137,6 +156,55 @@ inline folly::Future<HTTPResponse> call_handler(HandlerType& f,
   return call_handler(std::index_sequence_for<HandlerArgs...>{},
                       type_sequence<HandlerArgs...>{}, f, request, matches);
 }
+
+template <typename HandlerType, bool IsStreaming, typename... HandlerArgs>
+struct RouteMatchMaker {};
+
+template <typename HandlerType, typename... HandlerArgs>
+struct RouteMatchMaker<HandlerType, false, HandlerArgs...> {
+  inline RouteMatch operator()(std::shared_ptr<const std::string>& path,
+                               boost::smatch& matches,
+                               HandlerType& handler) {
+    return RouteMatch(
+        RouteMatchResult::RouteMatched,
+        std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([
+          path = std::move(path), matches = std::move(matches), &handler
+        ](const HTTPRequest& request) mutable {
+          // We have to hold onto the original path variable because
+          // the matches object
+          // retains a reference to the string that was matched on.
+          // We use a unique_ptr
+          // because there's no absolute guarantee that an std::move
+          // won't invalidate the
+          // reference to the original string.
+          return route::call_handler<HandlerType, HandlerArgs...>(
+              handler, request, matches);
+        }));
+  }
+};
+
+template <typename HandlerType, typename... HandlerArgs>
+struct RouteMatchMaker<HandlerType, true, HandlerArgs...> {
+  inline RouteMatch operator()(std::shared_ptr<const std::string>& path,
+                               boost::smatch& matches,
+                               HandlerType& handler) {
+    LOG(INFO) << "HERE";
+    // TODO: Fill this out properly
+    return RouteMatch(
+        RouteMatchResult::RouteMatched,
+        std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(),
+        std::function<proxygen::RequestHandler*()>([
+          path = std::move(path), matches = std::move(matches), &handler
+        ]() {
+          // TODO: Exception handling to cleanup memory
+          auto ret = handler();
+          route::call_streaming_handler<HandlerArgs...>(*ret, matches);
+          return ret;
+        }));
+
+    return RouteMatch(RouteMatchResult::PathNotMatched);
+  }
+};
 
 template <typename... Args>
 inline typename std::enable_if<sizeof...(Args) == 0, void>::type
@@ -167,7 +235,7 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
   DCHECK(request != nullptr) << "Request must not be null";
   boost::smatch matches;
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
-  // TODO: Make this shared when using folly::function
+  // TODO: Make this uniuqe when using folly::function
   auto path = std::make_shared<const std::string>(
       std::move(std::get<1>(methodAndPath)));
   if (!boost::regex_match(*path, matches, regex_)) {
@@ -177,21 +245,11 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
     return RouteMatch(RouteMatchResult::MethodNotMatched);
   }
 
-  return RouteMatch(
-      RouteMatchResult::RouteMatched,
-      std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>([
-        path = std::move(path), matches = std::move(matches), this
-      ](const HTTPRequest& request) mutable {
-        // We have to hold onto the original path variable because
-        // the matches object
-        // retains a reference to the string that was matched on.
-        // We use a unique_ptr
-        // because there's no absolute guarantee that an std::move
-        // won't invalidate the
-        // reference to the original string.
-        return route::call_handler<HandlerType, HandlerArgs...>(
-            handler_, request, matches);
-      }));
+  return route::RouteMatchMaker<
+      HandlerType,
+      std::is_convertible<decltype(std::declval<HandlerType>()()),
+                          StreamingHTTPHandler<HandlerArgs...>*>::value,
+      HandlerArgs...>{}(path, matches, handler_);
 }
 
 template <typename HandlerType, typename... HandlerArgs>

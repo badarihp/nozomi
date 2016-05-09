@@ -14,7 +14,7 @@ using proxygen::HTTPMessage;
 using proxygen::ProxygenError;
 using proxygen::ResponseBuilder;
 
-//TODO: Tests need to be updated, and this needs to be injectable
+// TODO: Tests need to be updated, and this needs to be injectable
 namespace sakura {
 HTTPHandler::HTTPHandler(
     EventBase* evb,
@@ -78,7 +78,7 @@ void HTTPHandler::onEOM() noexcept {
    * in the wrong thread.
    */
   auto* evb = folly::EventBaseManager::get()->getEventBase();
-//TODO: Tests
+  // TODO: Tests
   try {
     response_ = via(wangle::getIOExecutor().get(),
                     [this]() { return handler_(*request_); })

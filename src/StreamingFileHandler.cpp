@@ -1,0 +1,32 @@
+#include "src/StreamingFileHandler.h"
+
+#include <glog/logging.h>
+
+namespace sakura {
+void StreamingFileHandler::onRequest(const HTTPRequest& request) noexcept {
+  LOG(INFO) << "onRequest";
+}
+
+void StreamingFileHandler::setRequestArgs() noexcept {
+  LOG(INFO) << "setRequestArgs ";
+}
+
+void StreamingFileHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+  LOG(INFO) << "onBody";
+}
+
+void StreamingFileHandler::onEOM() noexcept {
+  LOG(INFO) << "onEOM";
+  sendResponseHeaders(HTTPResponse(500, "Not implemented"));
+  sendEOF();
+}
+
+void StreamingFileHandler::onRequestComplete() noexcept {
+  LOG(INFO) << "onRequestComplete";
+}
+
+void StreamingFileHandler::onUnhandledError(
+    proxygen::ProxygenError err) noexcept {
+  LOG(INFO) << "onUnhandledError";
+}
+}

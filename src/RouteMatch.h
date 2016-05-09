@@ -33,7 +33,8 @@ struct RouteMatch {
         streamingHandler(std::move(streamingHandler)) {
     DCHECK(result != RouteMatched || (bool)this->streamingHandler ||
            (bool)this->handler)
-        << "Either streaming handler or handler must be set if the route matched!";
+        << "Either streaming handler or handler must be set if the route "
+           "matched!";
   }
 
   RouteMatchResult result;
