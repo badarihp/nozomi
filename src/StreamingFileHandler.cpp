@@ -7,8 +7,8 @@ void StreamingFileHandler::onRequest(const HTTPRequest& request) noexcept {
   LOG(INFO) << "onRequest";
 }
 
-void StreamingFileHandler::setRequestArgs() noexcept {
-  LOG(INFO) << "setRequestArgs ";
+void StreamingFileHandler::setRequestArgs(int64_t i) noexcept {
+  LOG(INFO) << "setRequestArgs " << i;
 }
 
 void StreamingFileHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {

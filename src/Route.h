@@ -41,14 +41,44 @@ inline auto make_route(std::string pattern,
       std::move(pattern), std::move(methods), std::move(handler));
 }
 
+template <typename RequestHandlerType>
+inline auto make_streaming_route(
+    std::string pattern,
+    std::unordered_set<proxygen::HTTPMethod> methods,
+    RequestHandlerType* (*handler)()) {
+  // TODO: Tests
+  return make_streaming_route<decltype(handler)>(
+      std::move(pattern), std::move(methods), std::move(handler));
+}
+
 template <typename HandlerType, typename... HandlerArgs>
 inline auto make_streaming_route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
-    HandlerType handler) {
-  // TODO: This doesn't infer HandlerArgs right now; get that working
+    HandlerType handler,
+    type_sequence<HandlerArgs...>) {
   return std::make_unique<Route<HandlerType, HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
+}
+
+template <typename HandlerType>
+inline auto make_streaming_route(
+    std::string pattern,
+    std::unordered_set<proxygen::HTTPMethod> methods,
+    HandlerType handler) {
+  // TODO: Tests to make sure that we don't break inferring
+  //       handler variables
+
+  // Get the type that comes out of the RequestHandler factory
+  using RequestHandler =
+      typename std::remove_pointer<decltype(handler())>::type;
+  // Using that type, get a pointer to the setRequestArgs method so
+  // that we can rip the HandlerArgs... types out without having
+  // to set them explicitly
+  using CallablePointer = decltype(&RequestHandler::setRequestArgs);
+  auto types = make_type_sequence<CallablePointer>();
+  return make_streaming_route(std::move(pattern), std::move(methods),
+                              std::move(handler), types);
 }
 
 template <typename HandlerType, typename Request, typename... HandlerArgs>

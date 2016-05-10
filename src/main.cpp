@@ -25,13 +25,15 @@ struct SampleController {
   static folly::Future<HTTPResponse> static_method(const HTTPRequest& request) {
     return HTTPResponse::future(200, "hello, world!");
   }
+  static auto method() { return new StreamingFileHandler(); }
 };
 
 int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
-      {}, make_static_route("/.*", {Method::GET},
-                            []() { return new StreamingFileHandler(); })
+      {}, make_streaming_route("/{{i}}/.*", {Method::GET},
+                               &SampleController::method)
+      //[]() { return new StreamingFileHandler(); })
       /*
             make_route(
                     "/", {Method::GET},

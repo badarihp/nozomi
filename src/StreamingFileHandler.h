@@ -7,11 +7,11 @@
 #include "src/StreamingHTTPHandler.h"
 
 namespace sakura {
-class StreamingFileHandler : public StreamingHTTPHandler<> {
+class StreamingFileHandler : public StreamingHTTPHandler<int64_t> {
  public:
   virtual ~StreamingFileHandler() {}
   virtual void onRequest(const HTTPRequest& request) noexcept override;
-  virtual void setRequestArgs() noexcept override;
+  virtual void setRequestArgs(int64_t) noexcept override;
   virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override;
   virtual void onEOM() noexcept override;
   virtual void onRequestComplete() noexcept override;
