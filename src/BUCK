@@ -8,6 +8,11 @@ common_deps(
 create_lib("Util", header_only=True)
 create_lib("Config")
 
+create_lib("PostParser", [
+        name("HTTPRequest"),
+    ],
+);
+
 create_lib("HTTPRequest",
     additional_headers=[
         "StringUtils.h",
@@ -102,6 +107,7 @@ create_lib("Server", [
     name("Router"),
     name("HTTPHandler"),
     name("HTTPHandlerFactory"),
+    name("PostParser"),
     name("StreamingFileHandler"),
     "//system:proxygenhttpserver",
 ])

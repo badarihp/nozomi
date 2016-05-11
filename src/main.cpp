@@ -8,6 +8,7 @@
 #include "src/StaticRoute.h"
 #include "src/StreamingFileHandler.h"
 
+#include <gflags/gflags.h>
 #include <folly/futures/Future.h>
 #include <folly/futures/Future.h>
 #include <proxygen/httpserver/HTTPServer.h>
