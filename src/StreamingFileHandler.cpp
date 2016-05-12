@@ -17,6 +17,7 @@ void StreamingFileHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
 
 void StreamingFileHandler::onEOM() noexcept {
   LOG(INFO) << "onEOM";
+  //TODO: When sending the file, make sure that we implement 304
   sendResponseHeaders(HTTPResponse(500, "Not implemented"));
   sendEOF();
 }
