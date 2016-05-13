@@ -5,6 +5,7 @@
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
+#include "src/Common.h"
 #include "src/HTTPHandlerFactory.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"

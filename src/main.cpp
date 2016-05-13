@@ -8,9 +8,9 @@
 #include "src/StaticRoute.h"
 #include "src/StreamingFileHandler.h"
 
+#include <folly/futures/Future.h>
+#include <folly/futures/Future.h>
 #include <gflags/gflags.h>
-#include <folly/futures/Future.h>
-#include <folly/futures/Future.h>
 #include <proxygen/httpserver/HTTPServer.h>
 #include <proxygen/httpserver/SignalHandler.h>
 #include <wangle/concurrent/GlobalExecutor.h>

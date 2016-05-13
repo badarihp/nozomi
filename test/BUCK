@@ -6,6 +6,8 @@ common_deps(
     "//system:wangle",
 )
 
+create_lib("Common", [name("//src", "EnumHash")], header_only=True)
+
 create_test("ConfigTest", [name("//src", "Config")])
 create_test("HTTPHandlerTest", [name("//src", "HTTPHandler")])
 create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory")])
@@ -13,4 +15,4 @@ create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
 create_test("HTTPResponseTest", [name("//src", "HTTPResponse")])
 create_test("RouteTest", [name("//src", "Route"), name("//src", "StaticRoute")])
 create_test("RouterTest", [name("//src", "Router")])
-create_test("PostParserTest", [name("//src", "PostParser")])
+create_test("PostParserTest", [name("//src", "PostParser"), name("Common")])

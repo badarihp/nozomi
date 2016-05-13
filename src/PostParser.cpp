@@ -55,10 +55,9 @@ Optional<vector<string>> PostParser::getStringList(const string& key) {
   if (it == parsedData_.end()) {
     return Optional<vector<string>>();
   } else {
-    return Optional<vector<string>>();
-    //        from(it->second) | map([](const auto& buf) { return
-    //        to_string(buf); }) |
-    //        as < vector<string>>());
+    return Optional<vector<string>>(
+        from(it->second) | map([](const auto& buf) { return to_string(buf); }) |
+        as<vector>());
   };
 }
 
@@ -77,10 +76,9 @@ Optional<vector<unique_ptr<IOBuf>>> PostParser::getBinaryList(
   if (it == parsedData_.end()) {
     return Optional<vector<unique_ptr<IOBuf>>>();
   } else {
-    return Optional<vector<unique_ptr<IOBuf>>>();
-    //        from(it->second) | map([](const auto& buf) { return buf->clone();
-    //        }) |
-    //        as < vector<string>>());
+    return Optional<vector<unique_ptr<IOBuf>>>(
+        from(it->second) | map([](const auto& buf) { return buf->clone(); }) |
+        move | as<vector<unique_ptr<IOBuf>>>());
   };
 }
 
@@ -99,8 +97,9 @@ unordered_map<string, vector<unique_ptr<IOBuf>>> PostParser::parseUrlEncoded(
   unordered_map<string, vector<unique_ptr<IOBuf>>> ret;
   auto asString = to_string(body);
   auto kvps =
-      split(asString, "&") | 
-      filter([](StringPiece& keyValueString){ return keyValueString.size() != 0; }) |
+      split(asString, "&") | filter([](StringPiece& keyValueString) {
+        return keyValueString.size() != 0;
+      }) |
       map([](StringPiece keyValueString) {
         folly::StringPiece key, value;
         if (!folly::split<false>("=", keyValueString, key, value)) {
@@ -136,7 +135,7 @@ unordered_map<string, vector<unique_ptr<IOBuf>>> PostParser::parseUrlEncoded(
 
 unordered_map<string, vector<unique_ptr<IOBuf>>> PostParser::parseFormData(
     const unique_ptr<IOBuf>& body) {
-  //TODO: https://tools.ietf.org/html/rfc7578
+  // TODO: https://tools.ietf.org/html/rfc7578
   return unordered_map<string, vector<unique_ptr<IOBuf>>>();
 }
 }

@@ -7,7 +7,7 @@ common_deps(
 
 create_lib("Util", header_only=True)
 create_lib("Config")
-
+create_lib("EnumHash", header_only=True)
 create_lib("PostParser", [
         name("HTTPRequest"),
     ],
@@ -19,8 +19,10 @@ create_lib("HTTPRequest",
     ],
 )
 create_lib("HTTPResponse", 
+    [
+        name("EnumHash"),
+    ],
     additional_headers=[
-        "EnumHash.h",
         "StringUtils.h",
     ],
 )
@@ -76,10 +78,10 @@ create_lib("Route",
         name("HTTPResponse"),
         name("HTTPRequest"),
         name("Util"),
+        name("EnumHash"),
     ],
     additional_headers=[
         "Route-inl.h",
-        "EnumHash.h",
     ],
 )
 create_lib("Router", 
