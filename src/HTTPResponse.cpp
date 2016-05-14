@@ -9,7 +9,7 @@ using std::unique_ptr;
 using std::unordered_map;
 using folly::IOBuf;
 
-namespace sakura {
+namespace nozomi {
 
 HTTPResponse::HTTPResponse(int16_t statusCode,
                            const dynamic& body,

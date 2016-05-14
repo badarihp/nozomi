@@ -10,7 +10,7 @@
 
 #include "src/Router.h"
 
-namespace sakura {
+namespace nozomi {
 
 class HTTPHandler : public virtual proxygen::RequestHandler {
  private:

@@ -6,7 +6,7 @@
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/mpl/at.hpp>
 
-namespace sakura {
+namespace nozomi {
 
 template <typename Container>
 inline void push_back_move(Container& container) {}

@@ -12,7 +12,7 @@
 
 #include "src/StringUtils.h"
 
-namespace sakura {
+namespace nozomi {
 
 class HTTPRequest {
  public:

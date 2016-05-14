@@ -10,7 +10,7 @@
 
 using namespace std;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 TEST(ConfigTest, empty_address_list_throws) {

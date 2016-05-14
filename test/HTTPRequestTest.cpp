@@ -15,7 +15,7 @@ using proxygen::HTTPMethod;
 using proxygen::HTTPHeaderCode;
 using folly::IOBuf;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 TEST(HTTPRequestTest, method_is_correct_or_defaults_to_get) {

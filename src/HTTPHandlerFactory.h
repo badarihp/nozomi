@@ -8,7 +8,7 @@
 #include "src/HTTPHandler.h"
 #include "src/Router.h"
 
-namespace sakura {
+namespace nozomi {
 
 template <typename HandlerType = HTTPHandler>
 class HTTPHandlerFactory : public virtual proxygen::RequestHandlerFactory {

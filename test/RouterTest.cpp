@@ -17,7 +17,7 @@ using namespace std;
 using folly::Optional;
 using proxygen::HTTPMethod;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 HTTPRequest make_request(

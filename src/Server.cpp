@@ -20,7 +20,7 @@ using std::unique_ptr;
 using std::vector;
 using folly::exception_wrapper;
 
-namespace sakura {
+namespace nozomi {
 
 HTTPServerOptions getHttpServerOptions(const Config& config, Router router) {
   HTTPServerOptions options;

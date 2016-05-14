@@ -9,7 +9,7 @@
 #include "src/Config.h"
 #include "src/Router.h"
 
-namespace sakura {
+namespace nozomi {
 
 class Server {
  private:

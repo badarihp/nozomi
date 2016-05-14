@@ -2,7 +2,7 @@
 
 #include <glog/logging.h>
 
-namespace sakura {
+namespace nozomi {
 HTTPRequest::HTTPRequest(std::unique_ptr<proxygen::HTTPMessage> request,
                          std::unique_ptr<folly::IOBuf> body)
     : request_(std::move(request)),

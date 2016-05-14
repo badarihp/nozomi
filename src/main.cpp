@@ -15,7 +15,7 @@
 #include <proxygen/httpserver/SignalHandler.h>
 #include <wangle/concurrent/GlobalExecutor.h>
 using namespace std;
-using namespace sakura;
+using namespace nozomi;
 using Method = proxygen::HTTPMethod;
 
 struct SampleController {

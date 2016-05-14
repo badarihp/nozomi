@@ -12,7 +12,7 @@
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
 
-namespace sakura {
+namespace nozomi {
 
 template <typename... HandlerArgs>
 // TODO: Use the same onRequest logic that we use in Route

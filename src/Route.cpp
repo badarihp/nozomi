@@ -19,7 +19,7 @@ using std::string;
 using std::unordered_set;
 using std::vector;
 
-namespace sakura {
+namespace nozomi {
 namespace route {
 
 using Replacement = pair<string, string>;

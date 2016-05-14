@@ -2,7 +2,7 @@
 
 #include <folly/io/async/EventBaseManager.h>
 
-namespace sakura {
+namespace nozomi {
 
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::onRequest(

@@ -10,7 +10,7 @@
 #include "src/EnumHash.h"
 #include "src/HTTPRequest.h"
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 template <typename HeaderType = proxygen::HTTPHeaderCode>

@@ -1,5 +1,5 @@
 #pragma once
-namespace sakura {
+namespace nozomi {
 
 namespace {
 template <typename HandlerType, bool IsStreaming>

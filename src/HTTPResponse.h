@@ -13,7 +13,7 @@
 #include "src/EnumHash.h"
 #include "src/StringUtils.h"
 
-namespace sakura {
+namespace nozomi {
 
 class HTTPResponse {
  private:

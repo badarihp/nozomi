@@ -19,7 +19,7 @@ using namespace std;
 using namespace folly;
 using namespace proxygen;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 TEST(PostParserTest, parse_request_returns_empty_headers_on_missing_header) {

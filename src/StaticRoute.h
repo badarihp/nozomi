@@ -9,7 +9,7 @@
 
 #include <proxygen/lib/http/HTTPMethod.h>
 
-namespace sakura {
+namespace nozomi {
 
 template <typename HandlerType>
 class StaticRoute : public BaseRoute {

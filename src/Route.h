@@ -16,7 +16,7 @@
 #include <folly/futures/Future.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
-namespace sakura {
+namespace nozomi {
 
 template <typename HandlerType, typename... HandlerArgs>
 class Route : public BaseRoute {

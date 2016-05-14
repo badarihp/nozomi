@@ -7,7 +7,7 @@
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
 
-namespace sakura {
+namespace nozomi {
 enum RouteMatchResult {
   PathNotMatched,    // Path didn't match
   MethodNotMatched,  // Path matched, method didn't

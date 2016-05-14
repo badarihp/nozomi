@@ -10,7 +10,7 @@
 #include <folly/Optional.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
-namespace sakura {
+namespace nozomi {
 
 class BaseRoute {
  protected:

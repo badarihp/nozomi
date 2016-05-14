@@ -22,7 +22,7 @@ using folly::IOBuf;
 using namespace std;
 using namespace proxygen;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 struct CustomHandler : public virtual proxygen::ResponseHandler {

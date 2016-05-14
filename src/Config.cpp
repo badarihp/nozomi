@@ -1,3 +1,3 @@
 #include "src/Config.h"
 
-namespace sakura {}
+namespace nozomi {}

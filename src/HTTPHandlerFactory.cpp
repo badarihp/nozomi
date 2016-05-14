@@ -1,3 +1,3 @@
 #include "src/HTTPHandler.h"
 
-namespace sakura {}
+namespace nozomi {}

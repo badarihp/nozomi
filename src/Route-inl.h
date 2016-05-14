@@ -3,7 +3,7 @@
 #include <folly/Conv.h>
 #include <folly/Format.h>
 
-namespace sakura {
+namespace nozomi {
 // TODO: Make this an anonymous namespace?
 namespace route {
 

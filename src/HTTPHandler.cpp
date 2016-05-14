@@ -15,7 +15,7 @@ using proxygen::ProxygenError;
 using proxygen::ResponseBuilder;
 
 // TODO: Tests need to be updated, and this needs to be injectable
-namespace sakura {
+namespace nozomi {
 HTTPHandler::HTTPHandler(
     EventBase* evb,
     Router* router,

@@ -9,7 +9,7 @@
 
 #include "src/HTTPRequest.h"
 
-namespace sakura {
+namespace nozomi {
 
 class PostParser {
  private:

@@ -8,7 +8,7 @@
 #include <folly/SocketAddress.h>
 #include <proxygen/httpserver/HTTPServer.h>
 
-namespace sakura {
+namespace nozomi {
 
 class Config {
  private:

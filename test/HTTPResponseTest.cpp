@@ -15,7 +15,7 @@ using namespace std;
 using namespace folly;
 using namespace proxygen;
 
-namespace sakura {
+namespace nozomi {
 namespace test {
 
 TEST(HTTPResponseTest, constructors_and_getters_work) {

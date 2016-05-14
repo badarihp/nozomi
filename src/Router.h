@@ -13,7 +13,7 @@
 #include "src/HTTPResponse.h"
 #include "src/Util.h"
 
-namespace sakura {
+namespace nozomi {
 
 class Router {
  private:

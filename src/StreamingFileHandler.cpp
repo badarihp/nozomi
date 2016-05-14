@@ -2,7 +2,7 @@
 
 #include <glog/logging.h>
 
-namespace sakura {
+namespace nozomi {
 void StreamingFileHandler::onRequest(const HTTPRequest& request) noexcept {
   LOG(INFO) << "onRequest";
 }

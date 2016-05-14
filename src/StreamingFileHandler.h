@@ -6,7 +6,7 @@
 #include "src/HTTPResponse.h"
 #include "src/StreamingHTTPHandler.h"
 
-namespace sakura {
+namespace nozomi {
 class StreamingFileHandler : public StreamingHTTPHandler<int64_t> {
  public:
   virtual ~StreamingFileHandler() {}

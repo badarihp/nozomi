@@ -20,7 +20,7 @@ using std::vector;
 using proxygen::HTTPHeaderCode;
 using namespace folly::gen;
 
-namespace sakura {
+namespace nozomi {
 PostParser::PostParser(const HTTPRequest& request)
     : originalBody_(request.getBodyAsBytes()),
       parsedData_(parseRequest(request, originalBody_)) {}

@@ -5,7 +5,7 @@
 
 #include <folly/io/IOBuf.h>
 
-namespace sakura {
+namespace nozomi {
 inline std::string to_string(const std::unique_ptr<folly::IOBuf>& buffer) {
   std::string ret;
   ret.reserve(buffer->computeChainDataLength());

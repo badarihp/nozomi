@@ -4,7 +4,7 @@ using std::vector;
 using std::unique_ptr;
 using std::unordered_map;
 
-namespace sakura {
+namespace nozomi {
 
 Router::Router(unordered_map<int,
                              std::function<folly::Future<HTTPResponse>(
