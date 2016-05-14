@@ -3,3 +3,5 @@ buck-out
 *.swp
 *.pyc
 system/root
+*.s
+*.bc

@@ -6,9 +6,9 @@ common_deps(
     "//system:wangle",
 )
 
-create_lib("Common", [name("//src", "EnumHash")], header_only=True)
+create_lib("Common", [name("//src", "EnumHash"), name("//src", "HTTPRequest")], header_only=True)
 
-create_test("ConfigTest", [name("//src", "Config")])
+create_test("ConfigTest", [name("//src", "Config"), name("Common")])
 create_test("HTTPHandlerTest", [name("//src", "HTTPHandler")])
 create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory")])
 create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
