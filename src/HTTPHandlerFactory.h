@@ -54,9 +54,10 @@ class HTTPHandlerFactory : public virtual proxygen::RequestHandlerFactory {
     // neither
     //      of those two handlers are set
     if (routeMatch.handler) {
-      return new HandlerType(&router_, std::move(routeMatch.handler));
+      return new HandlerType(config_.getRequestTimeout(), &router_,
+                             std::move(routeMatch.handler));
     } else if (routeMatch.streamingHandler) {
-      //TODO: If streamingHandler is null, we need to instead return
+      // TODO: If streamingHandler is null, we need to instead return
       //      a default handler that returns a 500
       return routeMatch.streamingHandler();
     }

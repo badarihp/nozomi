@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 
 #include <folly/Optional.h>
@@ -7,71 +8,93 @@
 #include <folly/io/async/EventBase.h>
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
+#include <wangle/concurrent/GlobalExecutor.h>
 
 #include "src/Router.h"
 
 namespace nozomi {
 
+/**
+ * Class that waits for the headers and body to arrive before calling
+ * a user-defined handler, and sending that response back. Handlers
+ * run asynchronously on a threadpool and handlers must return futures
+ * in order to be valid.
+ */
 class HTTPHandler : public virtual proxygen::RequestHandler {
  private:
-  folly::EventBase* evb_;
+  std::chrono::milliseconds timeout_;
   Router* router_;
-  std::unique_ptr<proxygen::HTTPMessage> message_;
-  std::unique_ptr<folly::IOBuf> body_;
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler_;
+  std::unique_ptr<folly::IOBuf> body_;
+  folly::EventBase* responseEvb_;
+  folly::Executor* ioExecutor_;
+
+  std::unique_ptr<proxygen::HTTPMessage> message_;
 
   folly::Future<folly::Unit> response_;
   folly::Optional<HTTPRequest> request_;
 
  public:
+  /**
+   * Creates an HTTPHandler instance
+   *
+   * @param timeout - How long to wait for the handler to complete. A 503
+   *                  is sent if this timeout is exceeded
+   * @param router  - The router that was used to create handler. Used
+   *                  primarly for fetching error handlers
+   * @param handler - The handler to call once the request metadata and body
+   *                  have been received.
+   * @param responseEvb - The event base that responses should be sent back
+   *                      out on. If nullptr, the handler will pull an
+   *                      EventBase from the EventBase manager before calling
+   *                      handler
+   * @param ioExecutor - The executor where handler should be run. If not
+   *                     provided, the wangle global IO threadpool is used.
+   */
   HTTPHandler(
+      std::chrono::milliseconds timeout,
       Router* router,
       std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler,
-      folly::EventBase* evb = nullptr);
+      folly::EventBase* responseEvb = nullptr,
+      folly::Executor* ioExecutor = wangle::getIOExecutor().get());
+  virtual ~HTTPHandler() noexcept {}
+
+  /**
+   * Sends the response back to the user. This should only be invoked on
+   * the correct IO thread, lest the proxygen ResponseBuilder will cause
+   * problems.
+   */
   void sendResponse(const HTTPResponse& response);
 
   /**
-   * Invoked when we have successfully fetched headers from client. This will
-   * always be the first callback invoked on your handler.
+   * @copydoc proxygen::RequestHandler::onRequest()
    */
   virtual void onRequest(
       std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;
 
   /**
-   * Invoked when we get part of body for the request.
+   * @copydoc proxygen::RequestHandler::ononBody()
    */
   virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override;
 
   /**
-   * Invoked when the session has been upgraded to a different protocol
+   * @copydoc proxygen::RequestHandler::onUpgrade()
    */
   virtual void onUpgrade(proxygen::UpgradeProtocol prot) noexcept override;
 
   /**
-   * Invoked when we finish receiving the body.
+   * @copydoc proxygen::RequestHandler::onEOM()
    */
   virtual void onEOM() noexcept override;
 
   /**
-   * Invoked when request processing has been completed and nothing more
-   * needs to be done. This may be a good place to log some stats and
-   * clean up resources. This is distinct from onEOM() because it is
-   * invoked after the response is fully sent. Once this callback has been
-   * received, `downstream_` should be considered invalid.
+   * @copydoc proxygen::RequestHandler::requestComplete()
    */
   virtual void requestComplete() noexcept override;
 
   /**
-   * Request failed. Maybe because of read/write error on socket or client
-   * not being able to send request in time.
-   *
-   * NOTE: Can be invoked at any time (except for before onRequest).
-   *
-   * No more callbacks will be invoked after this. You should clean up after
-   * yourself.
+   * @copydoc proxygen::RequestHandler::onError()
    */
   virtual void onError(proxygen::ProxygenError err) noexcept override;
-
-  virtual ~HTTPHandler() noexcept {}
 };
 }

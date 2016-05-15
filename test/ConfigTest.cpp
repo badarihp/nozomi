@@ -44,6 +44,23 @@ TEST(ConfigTest, zero_threads_throws) {
       std::invalid_argument, "Number of threads (0) must be greater than zero");
 }
 
+TEST(ConfigTest, zero_timeout_throws) {
+  ASSERT_THROW_MSG(
+      {
+        Config c({make_tuple("::1", 1234, Config::Protocol::HTTP)}, 1,
+                 std::chrono::milliseconds(-1));
+      },
+      std::invalid_argument,
+      "Timeout (-1) must be greater than zero milliseconds");
+  ASSERT_THROW_MSG(
+      {
+        Config c({make_tuple("::1", 1234, Config::Protocol::HTTP)}, 1,
+                 std::chrono::milliseconds(0));
+      },
+      std::invalid_argument,
+      "Timeout (0) must be greater than zero milliseconds");
+}
+
 TEST(ConfigTest, constructors_work) {
   vector<string> addresses{
       "127.0.0.1", "::1",
@@ -53,7 +70,7 @@ TEST(ConfigTest, constructors_work) {
           make_tuple("127.0.0.1", 8080, Config::Protocol::HTTP),
           make_tuple("::1", 8081, Config::Protocol::HTTP2),
       },
-      1);
+      1, std::chrono::milliseconds(45));
   Config c2(
       {
           proxygen::HTTPServer::IPConfig(
@@ -61,7 +78,7 @@ TEST(ConfigTest, constructors_work) {
           proxygen::HTTPServer::IPConfig(folly::SocketAddress("::1", 8081),
                                          Config::Protocol::HTTP2),
       },
-      1);
+      1, std::chrono::milliseconds(45));
 
   ASSERT_EQ("127.0.0.1", c.getHTTPAddresses()[0].address.getAddressStr());
   ASSERT_EQ(8080, c.getHTTPAddresses()[0].address.getPort());
@@ -70,6 +87,7 @@ TEST(ConfigTest, constructors_work) {
   ASSERT_EQ(8081, c.getHTTPAddresses()[1].address.getPort());
   ASSERT_EQ(Config::Protocol::HTTP2, c.getHTTPAddresses()[1].protocol);
   ASSERT_EQ(1, c.getWorkerThreads());
+  ASSERT_EQ(std::chrono::milliseconds(45), c.getRequestTimeout());
 
   ASSERT_EQ("127.0.0.1", c2.getHTTPAddresses()[0].address.getAddressStr());
   ASSERT_EQ(8080, c2.getHTTPAddresses()[0].address.getPort());
@@ -78,6 +96,7 @@ TEST(ConfigTest, constructors_work) {
   ASSERT_EQ(8081, c2.getHTTPAddresses()[1].address.getPort());
   ASSERT_EQ(Config::Protocol::HTTP2, c2.getHTTPAddresses()[1].protocol);
   ASSERT_EQ(1, c2.getWorkerThreads());
+  ASSERT_EQ(std::chrono::milliseconds(45), c2.getRequestTimeout());
 }
 }
 }

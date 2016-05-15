@@ -49,7 +49,8 @@ struct parameter_type {
 template <typename CallableMemberPointer, size_t Zero, size_t... N>
 auto make_type_sequence(type_sequence<CallableMemberPointer>,
                         std::index_sequence<Zero, N...>) {
-  return type_sequence<typename parameter_type<CallableMemberPointer, N>::type...>();
+  return type_sequence<
+      typename parameter_type<CallableMemberPointer, N>::type...>();
 }
 
 /**

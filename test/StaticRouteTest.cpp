@@ -134,7 +134,7 @@ TEST(StaticRouteTest, static_route_calls_streaming_handler) {
   auto request = make_request("/testing/1", HTTPMethod::GET);
 
   auto r = make_streaming_static_route("/testing/1", {HTTPMethod::GET},
-                                 [&handler]() { return handler.get(); });
+                                       [&handler]() { return handler.get(); });
 
   r->handler(&request.getRawRequest()).streamingHandler();
 
@@ -154,11 +154,11 @@ TEST(StaticRouteTest, streaming_handler_returns_nullptr_on_handler_exception) {
 TEST(StaticRouteTest, streaming_handler_returns_nullptr_on_handler_nullptr) {
   auto request = make_request("/", HTTPMethod::GET);
 
-  auto r =
-      make_streaming_static_route("/", {HTTPMethod::GET},
-                           []() -> TestStreamingHandler<>* { return nullptr; });
+  auto r = make_streaming_static_route(
+      "/", {HTTPMethod::GET},
+      []() -> TestStreamingHandler<>* { return nullptr; });
 
   ASSERT_EQ(nullptr, r->handler(&request.getRawRequest()).streamingHandler());
 }
-
-}}
+}
+}

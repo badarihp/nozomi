@@ -62,7 +62,7 @@ inline RouteParamType to_RouteParamType<folly::Optional<std::string>>() {
 
 /**
  * Converts match N of a regex match to type T.
- * 
+ *
  * @param matches - Regex matches from a Route match
  */
 template <typename T>

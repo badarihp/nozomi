@@ -47,13 +47,13 @@ std::ostream& operator<<(std::ostream& out, RouteParamType param) {
 }
 
 /**
- * Converts a piece of a route pattern into a corresponding regular 
+ * Converts a piece of a route pattern into a corresponding regular
  * expression chunk
  *
  * @param paramNum - Which parameter this is. This number is used
  *                     in the regex group name.
  * @param originalPattern - The original string that was matched (e.g. {{i}})
- * @param value - The value if applicable for this type of parameter 
+ * @param value - The value if applicable for this type of parameter
  *                (e.g. {{s:\w+}}, would pass in "\w+")
  * @param consumed - The piece string that should be consumed whether
  *                   there was a full match or not. This is used by optionals
@@ -86,7 +86,6 @@ Replacement route_to_regex<Optional<int64_t>>(int paramNum,
       std::move(originalPattern),
       sformat(R"((?:(?<__{}>[+-]?\d+){})?)", paramNum, consumed));
 }
-
 
 template <>
 Replacement route_to_regex<double>(int paramNum,
@@ -157,8 +156,8 @@ pair<basic_regex<char>, vector<RouteParamType>> parse_route_pattern(
       types.push_back(RouteParamType::Int64);
     } else if (match["optional_int"].matched) {
       replacements.emplace_back(route_to_regex<Optional<int64_t>>(
-          replacements.size(), match["optional_int"].str(),
-          "", match["optional_int_regex"].str()));
+          replacements.size(), match["optional_int"].str(), "",
+          match["optional_int_regex"].str()));
       types.push_back(RouteParamType::OptionalInt64);
     } else if (match["double"].matched) {
       replacements.emplace_back(route_to_regex<double>(
@@ -166,8 +165,8 @@ pair<basic_regex<char>, vector<RouteParamType>> parse_route_pattern(
       types.push_back(RouteParamType::Double);
     } else if (match["optional_double"].matched) {
       replacements.emplace_back(route_to_regex<Optional<double>>(
-          replacements.size(), match["optional_double"].str(),
-          "", match["optional_double_regex"].str()));
+          replacements.size(), match["optional_double"].str(), "",
+          match["optional_double_regex"].str()));
       types.push_back(RouteParamType::OptionalDouble);
     } else if (match["string"].matched) {
       replacements.emplace_back(

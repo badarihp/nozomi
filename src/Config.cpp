@@ -18,9 +18,19 @@ void Config::setWorkerThreads(size_t workerThreads) {
   workerThreads_ = workerThreads;
 }
 
+void Config::setRequestTimeout(std::chrono::milliseconds requestTimeout) {
+  if (requestTimeout.count() <= 0) {
+    throw std::invalid_argument(
+        folly::sformat("Timeout ({}) must be greater than zero milliseconds",
+                       requestTimeout.count()));
+  }
+  requestTimeout_ = requestTimeout;
+}
+
 Config::Config(
     std::vector<std::tuple<std::string, uint16_t, Protocol>> httpAddresses,
-    size_t workerThreads) {
+    size_t workerThreads,
+    std::chrono::milliseconds requestTimeout) {
   std::string host;
   uint16_t port;
   Protocol protocol;
@@ -40,11 +50,14 @@ Config::Config(
 
   setHTTPAddresses(std::move(newHTTPAddresses));
   setWorkerThreads(workerThreads);
+  setRequestTimeout(requestTimeout);
 }
 
 Config::Config(std::vector<proxygen::HTTPServer::IPConfig> httpAddresses,
-               size_t workerThreads) {
+               size_t workerThreads,
+               std::chrono::milliseconds requestTimeout) {
   setHTTPAddresses(std::move(httpAddresses));
   setWorkerThreads(workerThreads);
+  setRequestTimeout(requestTimeout);
 }
 }

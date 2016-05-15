@@ -2,11 +2,13 @@
 
 #include <folly/io/async/EventBaseManager.h>
 #include <proxygen/httpserver/ResponseBuilder.h>
-#include <wangle/concurrent/GlobalExecutor.h>
 
 #include <glog/logging.h>
 
 using folly::EventBase;
+using folly::EventBaseManager;
+using folly::Executor;
+using folly::Future;
 using folly::IOBuf;
 using std::shared_ptr;
 using std::unique_ptr;
@@ -14,16 +16,20 @@ using proxygen::HTTPMessage;
 using proxygen::ProxygenError;
 using proxygen::ResponseBuilder;
 
-// TODO: Tests need to be updated, and this needs to be injectable
 namespace nozomi {
+
 HTTPHandler::HTTPHandler(
+    std::chrono::milliseconds timeout,
     Router* router,
-    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler,
-    EventBase* evb)
-    : evb_(evb),
+    std::function<Future<HTTPResponse>(const HTTPRequest&)> handler,
+    EventBase* responseEvb,
+    Executor* ioExecutor)
+    : timeout_(timeout),
       router_(router),
       handler_(std::move(handler)),
-      body_(IOBuf::create(0)) {
+      body_(IOBuf::create(0)),
+      responseEvb_(responseEvb),
+      ioExecutor_(ioExecutor) {
   DCHECK(router != nullptr);
 }
 
@@ -38,35 +44,23 @@ void HTTPHandler::sendResponse(const HTTPResponse& response) {
         builder.header(header, value);
       });
 
-  builder.body(response.getBody()).sendWithEOM();  // For streaming calls, we'll
-                                                   // use chunked encoding in a
-                                                   // different handler
+  builder.body(response.getBody()).sendWithEOM();
 }
 
-void HTTPHandler::onRequest(std::unique_ptr<HTTPMessage> headers) noexcept {
+void HTTPHandler::onRequest(unique_ptr_ptr<HTTPMessage> headers) noexcept {
   DCHECK(message_ == nullptr);
   message_ = std::move(headers);
 };
 
-/**
- * Invoked when we get part of body for the request.
- */
-void HTTPHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+void HTTPHandler::onBody(unique_ptr_ptr<IOBuf> body) noexcept {
   body_->prependChain(std::move(body));
 };
 
-/**
- * Invoked when the session has been upgraded to a different protocol
- */
 void HTTPHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
     // TODO: Websockets
 };
 
-/**
- * Invoked when we finish receiving the body.
- */
 void HTTPHandler::onEOM() noexcept {
-  // TODO: Future timeout
   request_ = HTTPRequest(std::move(message_), std::move(body_));
 
   /*
@@ -76,36 +70,24 @@ void HTTPHandler::onEOM() noexcept {
    * response handler calls "runInLoop", which will break if we're running
    * in the wrong thread.
    */
-  auto* evb =
-      evb_ != nullptr ? evb_ : folly::EventBaseManager::get()->getEventBase();
-  // TODO: Tests
-  try {
-    response_ = via(wangle::getIOExecutor().get(),
-                    [this]() { return handler_(*request_); })
-                    .onError([this](const std::exception& e) {
-                      return router_->getErrorHandler(500)(*request_).onError(
-                          [](const std::exception& e) {
-                            return HTTPResponse(500, "Unknown error");
-                          });
-                    })
-                    .onTimeout(std::chrono::seconds(1),
-                               [this]() { return HTTPResponse(503); })
-                    .then(evb, [this, evb](const HTTPResponse& response) {
-                      sendResponse(response);
-                    });
-  } catch (const std::exception& e) {
-    response_ = via(
-        evb, [this]() { sendResponse(HTTPResponse(500, "Unknown error")); });
-  }
+  auto* evb = responseEvb_ != nullptr ? responseEvb_
+                                      : EventBaseManager::get()->getEventBase();
+  response_ = via(ioExecutor_, [this]() { return handler_(*request_); })
+                  .onError([this](const std::exception& e) {
+                    return router_->getErrorHandler(500)(*request_);
+                  })
+                  .onTimeout(timeout_,
+                             [this]() {
+                               return router_->getErrorHandler(503)(*request_);
+                             })
+                  .onError([](const std::exception& e) {
+                    return HTTPResponse(500, "Unknown error");
+                  })
+                  .then(evb, [this, evb](const HTTPResponse& response) {
+                    sendResponse(response);
+                  });
 };
 
-/**
- * Invoked when request processing has been completed and nothing more
- * needs to be done. This may be a good place to log some stats and
- * clean up resources. This is distinct from onEOM() because it is
- * invoked after the response is fully sent. Once this callback has been
- * received, `downstream_` should be considered invalid.
- */
 void HTTPHandler::requestComplete() noexcept {
   // This is not called until after the response is sent,
   // so deleting here is fine. This is the pattern that's
@@ -113,14 +95,9 @@ void HTTPHandler::requestComplete() noexcept {
   delete this;
 };
 
-/**
- * Request failed. Maybe because of read/write error on socket or client
- * not being able to send request in time.
- *
- * NOTE: Can be invoked at any time (except for before onRequest).
- *
- * No more callbacks will be invoked after this. You should clean up after
- * yourself.
- */
-void HTTPHandler::onError(ProxygenError err) noexcept { delete this; };
+void HTTPHandler::onError(ProxygenError err) noexcept {
+  // Once this is called, no other callbacks will be run, so it's safe to
+  // delete here. This is the pattern used in proxygen example code
+  delete this;
+};
 }
