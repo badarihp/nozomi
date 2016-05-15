@@ -11,7 +11,7 @@
 
 namespace nozomi {
 
-template <typename HandlerType>
+template <typename HandlerType, bool IsStreaming>
 class StaticRoute : public BaseRoute {
   // TODO: Streaming caller
  private:
@@ -30,7 +30,16 @@ inline std::unique_ptr<BaseRoute> make_static_route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
     HandlerType handler) {
-  return std::make_unique<StaticRoute<HandlerType>>(
+  return std::make_unique<StaticRoute<HandlerType, false>>(
+      std::move(pattern), std::move(methods), std::move(handler));
+}
+
+template <typename HandlerType>
+inline std::unique_ptr<BaseRoute> make_streaming_static_route(
+    std::string pattern,
+    std::unordered_set<proxygen::HTTPMethod> methods,
+    HandlerType handler) {
+  return std::make_unique<StaticRoute<HandlerType, true>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 }

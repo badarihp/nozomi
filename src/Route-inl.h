@@ -228,8 +228,8 @@ parse_route_pattern(const std::string& route);
 
 }  // end namespace route
 
-template <typename HandlerType, typename... HandlerArgs>
-RouteMatch Route<HandlerType, HandlerArgs...>::handler(
+template <typename HandlerType, bool IsStreaming, typename... HandlerArgs>
+RouteMatch Route<HandlerType, IsStreaming, HandlerArgs...>::handler(
     const proxygen::HTTPMessage* request) {
   DCHECK(request != nullptr) << "Request must not be null";
   boost::smatch matches;
@@ -244,15 +244,12 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
     return RouteMatch(RouteMatchResult::MethodNotMatched);
   }
 
-  return route::RouteMatchMaker<
-      HandlerType,
-      std::is_convertible<decltype(std::declval<HandlerType>()(std::declval<const HTTPRequest&>())),
-                          StreamingHTTPHandler<HandlerArgs...>*>::value,
-      HandlerArgs...>{}(path, matches, handler_);
+  return route::RouteMatchMaker<HandlerType, IsStreaming, HandlerArgs...>{}(
+      path, matches, handler_);
 }
 
-template <typename HandlerType, typename... HandlerArgs>
-Route<HandlerType, HandlerArgs...>::Route(
+template <typename HandlerType, bool IsStreaming, typename... HandlerArgs>
+Route<HandlerType, IsStreaming, HandlerArgs...>::Route(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
     HandlerType handler)

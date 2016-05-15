@@ -76,7 +76,8 @@ void HTTPHandler::onEOM() noexcept {
    * response handler calls "runInLoop", which will break if we're running
    * in the wrong thread.
    */
-  auto* evb = evb_ != nullptr ? evb_ : folly::EventBaseManager::get()->getEventBase();
+  auto* evb =
+      evb_ != nullptr ? evb_ : folly::EventBaseManager::get()->getEventBase();
   // TODO: Tests
   try {
     response_ = via(wangle::getIOExecutor().get(),
@@ -87,7 +88,8 @@ void HTTPHandler::onEOM() noexcept {
                             return HTTPResponse(500, "Unknown error");
                           });
                     })
-                    .onTimeout(std::chrono::seconds(1), [this](){ return HTTPResponse(503); })
+                    .onTimeout(std::chrono::seconds(1),
+                               [this]() { return HTTPResponse(503); })
                     .then(evb, [this, evb](const HTTPResponse& response) {
                       sendResponse(response);
                     });

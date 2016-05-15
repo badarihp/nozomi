@@ -32,16 +32,16 @@ struct RouteMatchMaker<HandlerType, true> {
 };
 }
 
-template <typename HandlerType>
-StaticRoute<HandlerType>::StaticRoute(
+template <typename HandlerType, bool IsStreaming>
+StaticRoute<HandlerType, IsStreaming>::StaticRoute(
     std::string pattern,
     std::unordered_set<proxygen::HTTPMethod> methods,
     HandlerType handler)
     : BaseRoute(std::move(pattern), std::move(methods), true),
       handler_(std::move(handler)) {}
 
-template <typename HandlerType>
-RouteMatch StaticRoute<HandlerType>::handler(
+template <typename HandlerType, bool IsStreaming>
+RouteMatch StaticRoute<HandlerType, IsStreaming>::handler(
     const proxygen::HTTPMessage* request) {
   DCHECK(request != nullptr);
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
@@ -51,10 +51,6 @@ RouteMatch StaticRoute<HandlerType>::handler(
   if (methods_.find(std::get<0>(methodAndPath)) == methods_.end()) {
     return RouteMatch(RouteMatchResult::MethodNotMatched);
   }
-  return RouteMatchMaker<
-      HandlerType,
-
-      std::is_convertible<decltype(std::declval<HandlerType>()()),
-                          StreamingHTTPHandler<>*>::value>{}(handler_);
+  return RouteMatchMaker<HandlerType, IsStreaming>{}(handler_);
 }
 }

@@ -18,7 +18,7 @@
 
 namespace nozomi {
 
-template <typename HandlerType, typename... HandlerArgs>
+template <typename HandlerType, bool isStreaming, typename... HandlerArgs>
 class Route : public BaseRoute {
   // TODO: Streaming caller
  private:
@@ -37,7 +37,7 @@ inline auto make_route(std::string pattern,
                        std::unordered_set<proxygen::HTTPMethod> methods,
                        folly::Future<HTTPResponse> (*handler)(
                            const HTTPRequest&, HandlerArgs...)) {
-  return std::make_unique<Route<decltype(handler), HandlerArgs...>>(
+  return std::make_unique<Route<decltype(handler), false, HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 
@@ -57,7 +57,7 @@ inline auto make_streaming_route(
     std::unordered_set<proxygen::HTTPMethod> methods,
     HandlerType handler,
     type_sequence<HandlerArgs...>) {
-  return std::make_unique<Route<HandlerType, HandlerArgs...>>(
+  return std::make_unique<Route<HandlerType, true, HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 
@@ -82,12 +82,11 @@ inline auto make_streaming_route(
 }
 
 template <typename HandlerType, typename Request, typename... HandlerArgs>
-inline std::unique_ptr<Route<HandlerType, HandlerArgs...>> make_route(
-    std::string pattern,
-    std::unordered_set<proxygen::HTTPMethod> methods,
-    HandlerType handler,
-    type_sequence<Request, HandlerArgs...>) {
-  return std::make_unique<Route<HandlerType, HandlerArgs...>>(
+inline auto make_route(std::string pattern,
+                       std::unordered_set<proxygen::HTTPMethod> methods,
+                       HandlerType handler,
+                       type_sequence<Request, HandlerArgs...>) {
+  return std::make_unique<Route<HandlerType, false, HandlerArgs...>>(
       std::move(pattern), std::move(methods), std::move(handler));
 }
 
