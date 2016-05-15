@@ -78,14 +78,24 @@ struct RegexRouteMatchMaker<HandlerType, true, HandlerArgs...> {
     // TODO: Fill this out properly
     return RouteMatch(
         RouteMatchResult::RouteMatched,
-        std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(),
         std::function<proxygen::RequestHandler*()>([
           path = std::move(path), matches = std::move(matches), &handler
         ]() {
           // TODO: Exception handling to cleanup memory
-          auto ret = handler();
-          call_streaming_handler<HandlerArgs...>(*ret, matches);
-ret = nullptr;
+          decltype(handler()) ret = nullptr;
+          try {
+            auto ret = handler();
+            if (ret == nullptr) {
+              return ret;
+            }
+            call_streaming_handler<HandlerArgs...>(*ret, matches);
+          } catch (const std::exception& e) {
+            // TODO: Logging
+            if (ret != nullptr) {
+              delete ret;
+            }
+            ret = nullptr;
+          }
           return ret;
         }));
   }
@@ -99,7 +109,7 @@ RouteMatch Route<HandlerType, IsStreaming, HandlerArgs...>::handler(
   DCHECK(request != nullptr) << "Request must not be null";
   boost::smatch matches;
   auto methodAndPath = HTTPRequest::getMethodAndPath(request);
-  // TODO: Make this uniuqe when using folly::function
+  // TODO: Make this unique when using folly::function
   auto path = std::make_shared<const std::string>(
       std::move(std::get<1>(methodAndPath)));
   if (!boost::regex_match(*path, matches, regex_)) {
@@ -148,7 +158,8 @@ Route<HandlerType, IsStreaming, HandlerArgs...>::Route(
       throw std::runtime_error(folly::sformat(
           "Pattern: {}\n"
           "Pattern parameter {} ({}) does not match function parameter {} ({})",
-          originalPattern_, i, to_string(patternParams[i]), i, to_string(functionParams[i])));
+          originalPattern_, i, to_string(patternParams[i]), i,
+          to_string(functionParams[i])));
     }
   }
 }

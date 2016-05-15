@@ -333,6 +333,9 @@ TEST(RouteTest, dynamic_routes_take_all_callables) {
 }
 
 TEST(RouteTest, streaming_handlers_are_called_with_correct_args) {
+  // Passing 0 or 1 parameters works well as a regression test
+  // to make sure that we don't accidentally introduce logic
+  // that relies on an argument being present or absent
   auto handler1 = std::make_unique<TestStreamingHandler<int64_t>>();
   auto handler2 = std::make_unique<TestStreamingHandler<>>();
   auto request1 = make_request("/testing/1", HTTPMethod::GET);
@@ -349,6 +352,26 @@ TEST(RouteTest, streaming_handlers_are_called_with_correct_args) {
   ASSERT_TRUE(handler1->setRequestArgsCalled);
   ASSERT_TRUE(handler2->setRequestArgsCalled);
   ASSERT_EQ(1, std::get<0>(handler1->requestArgs));
+}
+
+TEST(RouteTest, streaming_handler_returns_nullptr_on_handler_exception) {
+  auto request = make_request("/", HTTPMethod::GET);
+
+  auto r = make_streaming_route(
+      "/.*", {HTTPMethod::GET},
+      []() -> TestStreamingHandler<>* { throw runtime_error("Error"); });
+
+  ASSERT_EQ(nullptr, r->handler(&request.getRawRequest()).streamingHandler());
+}
+
+TEST(RouteTest, streaming_handler_returns_nullptr_on_handler_nullptr) {
+  auto request = make_request("/", HTTPMethod::GET);
+
+  auto r =
+      make_streaming_route("/.*", {HTTPMethod::GET},
+                           []() -> TestStreamingHandler<>* { return nullptr; });
+
+  ASSERT_EQ(nullptr, r->handler(&request.getRawRequest()).streamingHandler());
 }
 }
 }

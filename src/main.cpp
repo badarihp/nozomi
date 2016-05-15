@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
       {}, make_route("/", {Method::GET}, &SampleController::static_method),
-      // make_streaming_route("/{{i}}", {Method::GET},  []() { return new
-      // StreamingFileHandler(); })
+       make_streaming_route("/test1", {Method::GET},  []() { return new
+       StreamingFileHandler(); }),
       make_static_route("/route", {Method::GET},
                         &SampleController::static_method),
       make_streaming_static_route("/test", {Method::GET},

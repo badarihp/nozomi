@@ -30,8 +30,6 @@ HTTPRequest make_request(
   return HTTPRequest(std::move(headers), std::move(body));
 }
 
-// TODO: Flesh out HTTPResponse a bit so the tests can use response bodies,
-//      rather than status codes to verify calls
 TEST(RouterTest, checks_static_routes_first) {
   vector<unique_ptr<BaseRoute>> routes;
   routes.push_back(make_static_route(

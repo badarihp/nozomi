@@ -3,11 +3,11 @@
 namespace nozomi {
 
 void Config::setHTTPAddresses(
-    std::vector<proxygen::HTTPServer::IPConfig> HTTPAddresses) {
-  if (HTTPAddresses.size() == 0) {
+    std::vector<proxygen::HTTPServer::IPConfig> httpAddresses) {
+  if (httpAddresses.size() == 0) {
     throw std::invalid_argument("At least one address must be provided");
   }
-  HTTPAddresses_ = std::move(HTTPAddresses);
+  httpAddresses_ = std::move(httpAddresses);
 }
 
 void Config::setWorkerThreads(size_t workerThreads) {
@@ -19,15 +19,15 @@ void Config::setWorkerThreads(size_t workerThreads) {
 }
 
 Config::Config(
-    std::vector<std::tuple<std::string, uint16_t, Protocol>> HTTPAddresses,
+    std::vector<std::tuple<std::string, uint16_t, Protocol>> httpAddresses,
     size_t workerThreads) {
   std::string host;
   uint16_t port;
   Protocol protocol;
 
   std::vector<proxygen::HTTPServer::IPConfig> newHTTPAddresses;
-  newHTTPAddresses.reserve(HTTPAddresses.size());
-  for (const auto& tup : HTTPAddresses) {
+  newHTTPAddresses.reserve(httpAddresses.size());
+  for (const auto& tup : httpAddresses) {
     std::tie(host, port, protocol) = tup;
 
     try {
@@ -42,9 +42,9 @@ Config::Config(
   setWorkerThreads(workerThreads);
 }
 
-Config::Config(std::vector<proxygen::HTTPServer::IPConfig> HTTPAddresses,
+Config::Config(std::vector<proxygen::HTTPServer::IPConfig> httpAddresses,
                size_t workerThreads) {
-  setHTTPAddresses(std::move(HTTPAddresses));
+  setHTTPAddresses(std::move(httpAddresses));
   setWorkerThreads(workerThreads);
 }
 }

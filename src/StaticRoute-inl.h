@@ -22,11 +22,23 @@ struct StaticRouteMatchMaker<HandlerType, true> {
   inline RouteMatch operator()(HandlerType& handler) {
     return RouteMatch(
         RouteMatchResult::RouteMatched,
-        std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>(),
         std::function<proxygen::RequestHandler*()>([&handler]() mutable {
-          auto* ret = handler();
-          ret->setRequestArgs();
+          decltype(handler()) ret = nullptr;
+          try {
+            ret = handler();
+            if (ret == nullptr) {
+              return ret;
+            }
+            ret->setRequestArgs();
+          } catch (const std::exception& e) {
+            // TODO: Logging
+            if (ret != nullptr) {
+              delete ret;
+            }
+            ret = nullptr;
+          }
           return ret;
+
         }));
   }
 };

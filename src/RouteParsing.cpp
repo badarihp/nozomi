@@ -46,62 +46,80 @@ std::ostream& operator<<(std::ostream& out, RouteParamType param) {
   return out;
 }
 
+/**
+ * Converts a piece of a route pattern into a corresponding regular 
+ * expression chunk
+ *
+ * @param paramNum - Which parameter this is. This number is used
+ *                     in the regex group name.
+ * @param originalPattern - The original string that was matched (e.g. {{i}})
+ * @param value - The value if applicable for this type of parameter 
+ *                (e.g. {{s:\w+}}, would pass in "\w+")
+ * @param consumed - The piece string that should be consumed whether
+ *                   there was a full match or not. This is used by optionals
+ *                   to consume pieces of the path if the value isn't present
+ * @returns A pair of strings. The first one is the part of the original
+ *          string that should be replaced, and the second string is the regex
+ *          that it should be replaced with.
+ */
 template <typename T>
-Replacement route_to_regex(int paramCount,
+Replacement route_to_regex(int paramNum,
                            string originalPattern,
                            const string& value,
                            const string& consumed);
+
 template <>
-Replacement route_to_regex<int64_t>(int paramCount,
+Replacement route_to_regex<int64_t>(int paramNum,
                                     string originalPattern,
                                     const string& value,
                                     const string& consumed) {
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]?\d+))", paramCount));
+                        sformat(R"((?<__{}>[+-]?\d+))", paramNum));
 }
 
 template <>
-Replacement route_to_regex<double>(int paramCount,
-                                   string originalPattern,
-                                   const string& value,
-                                   const string& consumed) {
-  return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?))", paramCount));
-}
-
-template <>
-Replacement route_to_regex<Optional<int64_t>>(int paramCount,
+Replacement route_to_regex<Optional<int64_t>>(int paramNum,
                                               string originalPattern,
                                               const string& value,
                                               const string& consumed) {
   return std::make_pair(
       std::move(originalPattern),
-      sformat(R"((?:(?<__{}>[+-]?\d+){})?)", paramCount, value));
+      sformat(R"((?:(?<__{}>[+-]?\d+){})?)", paramNum, consumed));
+}
+
+
+template <>
+Replacement route_to_regex<double>(int paramNum,
+                                   string originalPattern,
+                                   const string& value,
+                                   const string& consumed) {
+  return std::make_pair(std::move(originalPattern),
+                        sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?))", paramNum));
 }
 
 template <>
-Replacement route_to_regex<Optional<double>>(int paramCount,
+Replacement route_to_regex<Optional<double>>(int paramNum,
                                              string originalPattern,
                                              const string& value,
                                              const string& consumed) {
   return std::make_pair(
       std::move(originalPattern),
-      sformat(R"((?:(?<__{}>[+-]?\d+(?:\.\d+)?){})?)", paramCount, value));
+      sformat(R"((?:(?<__{}>[+-]?\d+(?:\.\d+)?){})?)", paramNum, consumed));
 }
 
 template <>
-Replacement route_to_regex<string>(int paramCount,
+Replacement route_to_regex<string>(int paramNum,
                                    string originalPattern,
                                    const string& value,
                                    const string& consumed) {
   // Ensure that the regex provided is valid
   basic_regex<char> re(value, boost::regex::perl);
   return std::make_pair(std::move(originalPattern),
-                        sformat(R"((?<__{}>{}))", paramCount, value));
+                        sformat(R"((?<__{}>{}))", paramNum, value));
 }
 
 template <>
-Replacement route_to_regex<Optional<string>>(int paramCount,
+Replacement route_to_regex<Optional<string>>(int paramNum,
                                              string originalPattern,
                                              const string& value,
                                              const string& consumed) {
@@ -109,7 +127,7 @@ Replacement route_to_regex<Optional<string>>(int paramCount,
   basic_regex<char> re(value, boost::regex::perl);
   return std::make_pair(
       std::move(originalPattern),
-      sformat(R"((?:(?<__{}>{}){})?)", paramCount, value, consumed));
+      sformat(R"((?:(?<__{}>{}){})?)", paramNum, value, consumed));
 }
 
 pair<basic_regex<char>, vector<RouteParamType>> parse_route_pattern(
@@ -140,7 +158,7 @@ pair<basic_regex<char>, vector<RouteParamType>> parse_route_pattern(
     } else if (match["optional_int"].matched) {
       replacements.emplace_back(route_to_regex<Optional<int64_t>>(
           replacements.size(), match["optional_int"].str(),
-          match["optional_int_regex"].str(), ""));
+          "", match["optional_int_regex"].str()));
       types.push_back(RouteParamType::OptionalInt64);
     } else if (match["double"].matched) {
       replacements.emplace_back(route_to_regex<double>(
@@ -149,7 +167,7 @@ pair<basic_regex<char>, vector<RouteParamType>> parse_route_pattern(
     } else if (match["optional_double"].matched) {
       replacements.emplace_back(route_to_regex<Optional<double>>(
           replacements.size(), match["optional_double"].str(),
-          match["optional_double_regex"].str(), ""));
+          "", match["optional_double_regex"].str()));
       types.push_back(RouteParamType::OptionalDouble);
     } else if (match["string"].matched) {
       replacements.emplace_back(

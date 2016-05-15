@@ -24,6 +24,9 @@ enum class RouteParamType {
 std::string to_string(RouteParamType param);
 std::ostream& operator<<(std::ostream& out, RouteParamType param);
 
+/**
+ * Converts type T to a RouteTypeParam
+ */
 template <typename T>
 inline RouteParamType to_RouteParamType();
 
@@ -57,6 +60,11 @@ inline RouteParamType to_RouteParamType<folly::Optional<std::string>>() {
   return RouteParamType::OptionalString;
 }
 
+/**
+ * Converts match N of a regex match to type T.
+ * 
+ * @param matches - Regex matches from a Route match
+ */
 template <typename T>
 inline T get_handler_args(int N, const boost::smatch& matches);
 
@@ -122,21 +130,33 @@ get_handler_args<folly::Optional<std::string>>(int N,
   return ret;
 }
 
+/**
+ * Converts match N from a regex match to the correct type
+ *
+ * @param matches - Regex matches from a route's pattern matching
+ */
 template <int N, typename T>
 inline T get_handler_args(const boost::smatch& matches) {
   return get_handler_args<T>(N, matches);
 }
 
+/** Specialization used for variadic templates */
 template <typename... Args>
 inline typename std::enable_if<sizeof...(Args) == 0, void>::type
 parse_function_parameters(std::vector<RouteParamType>& params) {}
 
+/** Specialization used for variadic templates */
 template <typename Arg1, typename... Args>
 inline void parse_function_parameters(std::vector<RouteParamType>& params) {
   params.push_back(to_RouteParamType<Arg1>());
   parse_function_parameters<Args...>(params);
 }
 
+/**
+ * Converts a list of types that can be passed to handler methods
+ * into a vector of RouteParamType. This is used to verify that
+ * route patterns that are provided match the handler provided.
+ */
 template <typename... Args>
 std::vector<RouteParamType> parse_function_parameters() {
   std::vector<RouteParamType> params;
@@ -145,6 +165,14 @@ std::vector<RouteParamType> parse_function_parameters() {
   return params;
 }
 
+/**
+ * Parse a route string to a regular expresion and a vector of
+ * all types that were found in the route. See Route.h for enumeration
+ * of the options for route patterns
+ *
+ * @throws runtime_error if there was a problem with the pattern including
+ *                       invalid regex within types that accept regex
+ */
 std::pair<boost::basic_regex<char>, std::vector<RouteParamType>>
 parse_route_pattern(const std::string& route);
 }
