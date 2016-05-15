@@ -52,6 +52,8 @@ create_lib("RouteMatch",
     header_only=True,
 )
 
+create_lib("RouteParsing")
+
 create_lib("BaseRoute",
     [
         name("HTTPResponse"),
@@ -79,7 +81,9 @@ create_lib("Route",
         name("HTTPRequest"),
         name("Util"),
         name("EnumHash"),
+        name("RouteParsing"),
     ],
+    header_only=True,
     additional_headers=[
         "Route-inl.h",
     ],

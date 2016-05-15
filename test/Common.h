@@ -13,6 +13,7 @@
 
 #include "src/EnumHash.h"
 #include "src/HTTPRequest.h"
+#include "src/StreamingHTTPHandler.h"
 
 namespace nozomi {
 namespace test {
@@ -62,5 +63,35 @@ HTTPRequest make_request(
   }
   return HTTPRequest(std::move(message), std::move(body));
 }
+
+template <typename... HandlerArgs>
+struct TestStreamingHandler : StreamingHTTPHandler<HandlerArgs...> {
+  bool onBodyCalled = false;
+  bool onEOMCalled = false;
+  bool onRequestCalled = false;
+  bool onRequestCompleteCalled = false;
+  bool onUnhandledErrorCalled = false;
+  bool setRequestArgsCalled = false;
+  std::tuple<HandlerArgs...> requestArgs;
+
+  virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override {
+    onBodyCalled = true;
+  }
+  virtual void onEOM() noexcept override { onEOMCalled = true; }
+  virtual void onRequest(const HTTPRequest& request) noexcept override {
+    onRequestCalled = true;
+  }
+  virtual void onRequestComplete() noexcept override {
+    onRequestCompleteCalled = true;
+  }
+  virtual void onUnhandledError(proxygen::ProxygenError err) noexcept override {
+    onUnhandledErrorCalled = true;
+  }
+  virtual void setRequestArgs(HandlerArgs... args) override {
+    setRequestArgsCalled = true;
+    requestArgs =
+        std::make_tuple<HandlerArgs...>(std::forward<HandlerArgs>(args)...);
+  }
+};
 }
 }

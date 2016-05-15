@@ -3,10 +3,10 @@ namespace nozomi {
 
 namespace {
 template <typename HandlerType, bool IsStreaming>
-struct RouteMatchMaker {};
+struct StaticRouteMatchMaker {};
 
 template <typename HandlerType>
-struct RouteMatchMaker<HandlerType, false> {
+struct StaticRouteMatchMaker<HandlerType, false> {
   inline RouteMatch operator()(HandlerType& handler) {
     return RouteMatch(
         RouteMatchResult::RouteMatched,
@@ -18,7 +18,7 @@ struct RouteMatchMaker<HandlerType, false> {
 };
 
 template <typename HandlerType>
-struct RouteMatchMaker<HandlerType, true> {
+struct StaticRouteMatchMaker<HandlerType, true> {
   inline RouteMatch operator()(HandlerType& handler) {
     return RouteMatch(
         RouteMatchResult::RouteMatched,
@@ -51,6 +51,6 @@ RouteMatch StaticRoute<HandlerType, IsStreaming>::handler(
   if (methods_.find(std::get<0>(methodAndPath)) == methods_.end()) {
     return RouteMatch(RouteMatchResult::MethodNotMatched);
   }
-  return RouteMatchMaker<HandlerType, IsStreaming>{}(handler_);
+  return StaticRouteMatchMaker<HandlerType, IsStreaming>{}(handler_);
 }
 }

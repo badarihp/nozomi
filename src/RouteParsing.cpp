@@ -1,4 +1,4 @@
-#include "src/Route.h"
+#include "src/RouteParsing.h"
 
 #include <folly/Format.h>
 #include <folly/Optional.h>
@@ -20,7 +20,7 @@ using std::unordered_set;
 using std::vector;
 
 namespace nozomi {
-namespace route {
+namespace route_parsing {
 
 using Replacement = pair<string, string>;
 
