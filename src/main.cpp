@@ -24,7 +24,7 @@ struct SampleController {
     return HTTPResponse::future(200, "hello, world!");
   }
   static folly::Future<HTTPResponse> static_method(const HTTPRequest& request) {
-    return HTTPResponse::future(200, "hello, world!");
+    return folly::futures::sleep(std::chrono::milliseconds(500)).then([](){return HTTPResponse::future(200, "hello, world!");});
   }
   static auto method() { return new StreamingFileHandler(); }
 };
@@ -32,9 +32,10 @@ struct SampleController {
 int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
-      {}, make_streaming_route("/{{i}}/.*", {Method::GET},
-                               &SampleController::method)
-      //[]() { return new StreamingFileHandler(); })
+      {}, 
+      make_route("/", {Method::GET},
+                               &SampleController::static_method),
+     make_streaming_route("/1", {Method::GET},  []() { return new StreamingFileHandler(); })
       /*
             make_route(
                     "/", {Method::GET},

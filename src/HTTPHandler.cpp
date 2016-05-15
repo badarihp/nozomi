@@ -17,14 +17,13 @@ using proxygen::ResponseBuilder;
 // TODO: Tests need to be updated, and this needs to be injectable
 namespace nozomi {
 HTTPHandler::HTTPHandler(
-    EventBase* evb,
     Router* router,
-    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler)
+    std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler,
+    EventBase* evb)
     : evb_(evb),
       router_(router),
       handler_(std::move(handler)),
       body_(IOBuf::create(0)) {
-  DCHECK(evb != nullptr);
   DCHECK(router != nullptr);
 }
 
@@ -77,7 +76,7 @@ void HTTPHandler::onEOM() noexcept {
    * response handler calls "runInLoop", which will break if we're running
    * in the wrong thread.
    */
-  auto* evb = folly::EventBaseManager::get()->getEventBase();
+  auto* evb = evb_ != nullptr ? evb_ : folly::EventBaseManager::get()->getEventBase();
   // TODO: Tests
   try {
     response_ = via(wangle::getIOExecutor().get(),
@@ -88,6 +87,7 @@ void HTTPHandler::onEOM() noexcept {
                             return HTTPResponse(500, "Unknown error");
                           });
                     })
+                    .onTimeout(std::chrono::seconds(1), [this](){ return HTTPResponse(503); })
                     .then(evb, [this, evb](const HTTPResponse& response) {
                       sendResponse(response);
                     });

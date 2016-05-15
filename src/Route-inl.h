@@ -246,7 +246,7 @@ RouteMatch Route<HandlerType, HandlerArgs...>::handler(
 
   return route::RouteMatchMaker<
       HandlerType,
-      std::is_convertible<decltype(std::declval<HandlerType>()()),
+      std::is_convertible<decltype(std::declval<HandlerType>()(std::declval<const HTTPRequest&>())),
                           StreamingHTTPHandler<HandlerArgs...>*>::value,
       HandlerArgs...>{}(path, matches, handler_);
 }

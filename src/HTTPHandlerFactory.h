@@ -54,7 +54,7 @@ class HTTPHandlerFactory : public virtual proxygen::RequestHandlerFactory {
     // neither
     //      of those two handlers are set
     if (routeMatch.handler) {
-      return new HandlerType(evb_, &router_, std::move(routeMatch.handler));
+      return new HandlerType(&router_, std::move(routeMatch.handler));
     } else if (routeMatch.streamingHandler) {
       return routeMatch.streamingHandler();
     }

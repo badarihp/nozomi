@@ -91,9 +91,9 @@ struct HTTPHandlerTest : public ::testing::Test {
                       return handler(request);
                     })))),
         httpHandler(
-            &evb,
             &router,
-            [this](const HTTPRequest& request) { return handler(request); }),
+            [this](const HTTPRequest& request) { return handler(request); },
+            &evb),
         responseHandler(&httpHandler) {
     requestMessage->getHeaders().set("Content-Type", "text/plain");
     requestMessage->setMethod(proxygen::HTTPMethod::GET);
@@ -202,5 +202,6 @@ TEST_F(HTTPHandlerTest, sends_empty_buffer_when_no_body_sent) {
 TEST(DISABLED_HTTPHandlerTest, sets_unset_headers) {}
 TEST(DISABLED_HTTPHandlerTest, does_not_set_default_headers_if_already_set) {}
 TEST(DISABLED_HTTPHandlerTest, drives_future_with_correct_evb) {}
+TEST(DISABLED_HTTPHandlerTest, returns_503_on_future_timeout) {}
 }
 }

@@ -22,7 +22,7 @@ using folly::exception_wrapper;
 
 namespace nozomi {
 
-HTTPServerOptions getHttpServerOptions(const Config& config, Router router) {
+HTTPServerOptions getHTTPServerOptions(const Config& config, Router router) {
   HTTPServerOptions options;
   options.threads = config.getWorkerThreads();
   vector<unique_ptr<RequestHandlerFactory>> handlerFactories;
@@ -35,11 +35,11 @@ HTTPServerOptions getHttpServerOptions(const Config& config, Router router) {
 
 Server::Server(Config config, Router router)
     : config_(std::move(config)),
-      server_(getHttpServerOptions(config_, std::move(router))) {}
+      server_(getHTTPServerOptions(config_, std::move(router))) {}
 
 folly::Future<Unit> Server::start() {
   CHECK(!mainThread_) << "A server can only be started once";
-  auto addresses = config_.getHttpAddresses();
+  auto addresses = config_.getHTTPAddresses();
   server_.bind(addresses);
   auto startPromise = std::make_shared<Promise<Unit>>();
   mainThread_ = thread([this, startPromise] {
