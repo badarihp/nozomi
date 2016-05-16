@@ -12,9 +12,9 @@ create_test("ConfigTest", [name("//src", "Config"), name("Common")])
 create_test("RouteTest", [name("//src", "Route"), name("Common")])
 create_test("StaticRouteTest", [name("//src", "StaticRoute"), name("Common")])
 create_test("HTTPHandlerTest", [name("//src", "HTTPHandler")])
+create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory"), name("Common")])
 
 
-create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory")])
 create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
 create_test("HTTPResponseTest", [name("//src", "HTTPResponse")])
 create_test("RouterTest", [name("//src", "Router")])

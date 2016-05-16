@@ -47,12 +47,12 @@ void HTTPHandler::sendResponse(const HTTPResponse& response) {
   builder.body(response.getBody()).sendWithEOM();
 }
 
-void HTTPHandler::onRequest(unique_ptr_ptr<HTTPMessage> headers) noexcept {
+void HTTPHandler::onRequest(unique_ptr<HTTPMessage> headers) noexcept {
   DCHECK(message_ == nullptr);
   message_ = std::move(headers);
 };
 
-void HTTPHandler::onBody(unique_ptr_ptr<IOBuf> body) noexcept {
+void HTTPHandler::onBody(unique_ptr<IOBuf> body) noexcept {
   body_->prependChain(std::move(body));
 };
 

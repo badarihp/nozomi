@@ -1,17 +1,19 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
+
 #include <folly/io/async/EventBase.h>
 #include <proxygen/httpserver/HTTPServer.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/HTTPMethod.h>
 
-#include "src/Common.h"
 #include "src/HTTPHandlerFactory.h"
 #include "src/HTTPRequest.h"
 #include "src/HTTPResponse.h"
 #include "src/Route.h"
 #include "src/Router.h"
 #include "src/StaticRoute.h"
+#include "test/Common.h"
 
 using namespace std;
 using namespace folly;
@@ -20,24 +22,15 @@ using namespace proxygen;
 namespace nozomi {
 namespace test {
 
-HTTPRequest make_request(
-    string path,
-    HTTPMethod method = HTTPMethod::GET,
-    unique_ptr<folly::IOBuf> body = folly::IOBuf::create(0)) {
-  auto headers = std::make_unique<proxygen::HTTPMessage>();
-  headers->setURL(path);
-  headers->setMethod(method);
-  return HTTPRequest(std::move(headers), std::move(body));
-}
-
 struct CustomHandler : public proxygen::RequestHandler {
-  folly::EventBase* evb_;
+  std::chrono::milliseconds timeout;
+  Router* router;
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler;
   CustomHandler(
-      folly::EventBase* evb,
+      std::chrono::milliseconds timeout,
       Router* router,
       std::function<folly::Future<HTTPResponse>(const HTTPRequest&)> handler)
-      : evb_(evb), handler(std::move(handler)) {}
+      : timeout(timeout), router(router), handler(std::move(handler)) {}
   virtual void onRequest(
       std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override {}
   virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override {}
@@ -49,44 +42,49 @@ struct CustomHandler : public proxygen::RequestHandler {
   virtual ~CustomHandler() noexcept {}
 };
 
-TEST(HTTPHandlerFactoryTest, returns_correct_handler) {
+TEST(HTTPHandlerFactoryTest, returns_nonstreaming_handler) {
   EventBase evb;
   auto router = make_router(
-      {}, make_static_route("/", {HTTPMethod::GET}, [](const auto& r) {
+      {}, make_static_route("/", {HTTPMethod::GET}, [](const auto&) {
         return HTTPResponse::future(200, "Sample string");
       }));
-  Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1);
+  Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1,
+           std::chrono::milliseconds(10000));
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
   auto request = make_request("/");
   auto rawRequest = request.getRawRequest();
 
   factory.onServerStart(&evb);
   auto* handlerPtr = factory.onRequest(nullptr, &rawRequest);
+
   unique_ptr<RequestHandler> handler(handlerPtr);
-  auto response =
-      static_cast<CustomHandler*>(handlerPtr)->handler(request).get();
+  auto* castPtr = static_cast<CustomHandler*>(handlerPtr);
+  auto response = castPtr->handler(request).get();
 
   ASSERT_TRUE(handler != nullptr);
-  ASSERT_EQ(&evb, static_cast<CustomHandler*>(handlerPtr)->evb_);
+  ASSERT_EQ(std::chrono::milliseconds(10000), castPtr->timeout);
+  ASSERT_NE(nullptr, castPtr->router);
   ASSERT_EQ("Sample string", response.getBodyString());
 }
 
-TEST(HTTPHandlerFactoryTest, passes_event_base_through) {
+TEST(HTTPHandlerFactoryTest, returns_streaming_handler) {
   EventBase evb;
-  auto router = make_router(
-      {}, make_static_route("/", {HTTPMethod::GET}, [](const auto& r) {
-        return HTTPResponse::future(200);
-      }));
-  Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1);
+  TestStreamingHandler<> streamingHandler;
+  auto router =
+      make_router({}, make_streaming_static_route(
+                          "/", {HTTPMethod::GET},
+                          [&streamingHandler]() { return &streamingHandler; }));
+
+  Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1,
+           std::chrono::milliseconds(10000));
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
   auto request = make_request("/");
   auto rawRequest = request.getRawRequest();
 
   factory.onServerStart(&evb);
   auto* handlerPtr = factory.onRequest(nullptr, &rawRequest);
-  unique_ptr<RequestHandler> handler(handlerPtr);
-  ASSERT_TRUE(handler != nullptr);
-  ASSERT_EQ(&evb, static_cast<CustomHandler*>(handlerPtr)->evb_);
+
+  ASSERT_EQ(&streamingHandler, handlerPtr);
 }
 }
 }
