@@ -8,9 +8,7 @@
 
 #include <folly/io/IOBuf.h>
 #include <folly/io/async/EventBase.h>
-#include <proxygen/httpserver/ResponseHandler.h>
 #include <proxygen/lib/http/HTTPMessage.h>
-#include <wangle/acceptor/TransportInfo.h>
 
 #include "src/HTTPHandler.h"
 #include "src/HTTPRequest.h"
@@ -18,6 +16,7 @@
 #include "src/Route.h"
 #include "src/StaticRoute.h"
 #include "src/StringUtils.h"
+#include "test/Common.h"
 
 using folly::IOBuf;
 
@@ -27,44 +26,6 @@ using namespace proxygen;
 namespace nozomi {
 namespace test {
 
-struct CustomResponseHandler : public virtual proxygen::ResponseHandler {
-  wangle::TransportInfo ti;
-  int sendChunkHeaderCalls = 0;
-  int sendChunkTerminatorCalls = 0;
-  int sendEOMCalls = 0;
-  int sendAbortCalls = 0;
-  int refreshTimeoutCalls = 0;
-  int pauseIngressCalls = 0;
-  int resumeIngressCalls = 0;
-  vector<HTTPMessage> messages;
-  vector<std::unique_ptr<IOBuf>> bodies;
-
-  CustomResponseHandler(proxygen::RequestHandler* upstream)
-      : proxygen::ResponseHandler(upstream) {}
-
-  virtual void sendHeaders(HTTPMessage& msg) noexcept {
-    messages.push_back(msg);
-  }
-  virtual void sendChunkHeader(size_t len) noexcept { sendChunkHeaderCalls++; }
-  virtual void sendBody(unique_ptr<IOBuf> body) noexcept {
-    bodies.push_back(std::move(body));
-  }
-  virtual void sendChunkTerminator() noexcept { sendChunkTerminatorCalls++; }
-  virtual void sendEOM() noexcept { sendEOMCalls++; }
-  virtual void sendAbort() noexcept { sendAbortCalls++; }
-  virtual void refreshTimeout() noexcept { refreshTimeoutCalls++; }
-  virtual void pauseIngress() noexcept { pauseIngressCalls++; }
-  virtual void resumeIngress() noexcept { resumeIngressCalls++; }
-  virtual ResponseHandler* newPushedResponse(
-      PushHandler* pushHandler) noexcept {
-    return this;
-  };
-  // Accessors for Transport/Connection information
-  virtual const wangle::TransportInfo& getSetupTransportInfo() const noexcept {
-    return ti;
-  };
-  virtual void getCurrentTransportInfo(wangle::TransportInfo* tinfo) const {}
-};
 
 struct HTTPHandlerTest : public ::testing::Test {
   function<folly::Future<HTTPResponse>(const HTTPRequest&)> errorHandler;
@@ -76,7 +37,7 @@ struct HTTPHandlerTest : public ::testing::Test {
   folly::EventBase evb;
   Router router;
   HTTPHandler httpHandler;
-  CustomResponseHandler responseHandler;
+  TestResponseHandler responseHandler;
 
   HTTPHandlerTest()
       : requestMessage(std::make_unique<HTTPMessage>()),

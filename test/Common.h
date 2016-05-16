@@ -7,9 +7,11 @@
 #include <boost/regex.hpp>
 #include <folly/io/IOBuf.h>
 #include <gtest/gtest.h>
+#include <proxygen/httpserver/ResponseHandler.h>
 #include <proxygen/lib/http/HTTPCommonHeaders.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/HTTPMethod.h>
+#include <wangle/acceptor/TransportInfo.h>
 
 #include "src/EnumHash.h"
 #include "src/HTTPRequest.h"
@@ -65,21 +67,29 @@ HTTPRequest make_request(
 }
 
 template <typename... HandlerArgs>
-struct TestStreamingHandler : StreamingHTTPHandler<HandlerArgs...> {
+struct TestStreamingHandler : public StreamingHTTPHandler<HandlerArgs...> {
   bool onBodyCalled = false;
   bool onEOMCalled = false;
-  bool onRequestCalled = false;
+  bool onRequestReceivedCalled = false;
   bool onRequestCompleteCalled = false;
   bool onUnhandledErrorCalled = false;
   bool setRequestArgsCalled = false;
+  proxygen::HTTPMessage request;
   std::tuple<HandlerArgs...> requestArgs;
+  std::unique_ptr<folly::IOBuf> body = folly::IOBuf::create(0);
+
+  TestStreamingHandler(folly::EventBase* evb): StreamingHTTPHandler<HandlerArgs...>(evb) {
+
+  }
 
   virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override {
     onBodyCalled = true;
+    body->prependChain(std::move(body));
   }
   virtual void onEOM() noexcept override { onEOMCalled = true; }
-  virtual void onRequest(const HTTPRequest& request) noexcept override {
-    onRequestCalled = true;
+  virtual void onRequestReceived(const HTTPRequest& request) noexcept override {
+    onRequestReceivedCalled = true;
+    this->request = request.getRawRequest();
   }
   virtual void onRequestComplete() noexcept override {
     onRequestCompleteCalled = true;
@@ -92,6 +102,45 @@ struct TestStreamingHandler : StreamingHTTPHandler<HandlerArgs...> {
     requestArgs =
         std::make_tuple<HandlerArgs...>(std::forward<HandlerArgs>(args)...);
   }
+};
+
+struct TestResponseHandler : public proxygen::ResponseHandler {
+  wangle::TransportInfo ti;
+  int sendChunkHeaderCalls = 0;
+  int sendChunkTerminatorCalls = 0;
+  int sendEOMCalls = 0;
+  int sendAbortCalls = 0;
+  int refreshTimeoutCalls = 0;
+  int pauseIngressCalls = 0;
+  int resumeIngressCalls = 0;
+  std::vector<proxygen::HTTPMessage> messages;
+  std::vector<std::unique_ptr<folly::IOBuf>> bodies;
+
+  TestResponseHandler(proxygen::RequestHandler* upstream)
+      : proxygen::ResponseHandler(upstream) {}
+
+  virtual void sendHeaders(proxygen::HTTPMessage& msg) noexcept {
+    messages.push_back(msg);
+  }
+  virtual void sendChunkHeader(size_t len) noexcept { sendChunkHeaderCalls++; }
+  virtual void sendBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+    bodies.push_back(std::move(body));
+  }
+  virtual void sendChunkTerminator() noexcept { sendChunkTerminatorCalls++; }
+  virtual void sendEOM() noexcept { sendEOMCalls++; }
+  virtual void sendAbort() noexcept { sendAbortCalls++; }
+  virtual void refreshTimeout() noexcept { refreshTimeoutCalls++; }
+  virtual void pauseIngress() noexcept { pauseIngressCalls++; }
+  virtual void resumeIngress() noexcept { resumeIngressCalls++; }
+  virtual proxygen::ResponseHandler* newPushedResponse(
+      proxygen::PushHandler* pushHandler) noexcept {
+    return this;
+  };
+  // Accessors for Transport/Connection information
+  virtual const wangle::TransportInfo& getSetupTransportInfo() const noexcept {
+    return ti;
+  };
+  virtual void getCurrentTransportInfo(wangle::TransportInfo* tinfo) const {}
 };
 }
 }

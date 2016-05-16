@@ -16,6 +16,6 @@ create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory"), name
 create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
 create_test("HTTPResponseTest", [name("//src", "HTTPResponse")])
 create_test("RouterTest", [name("//src", "Router")])
-
+create_test("StreamingHTTPHandlerTest", [name("//src", "StreamingHTTPHandler"), name("Common")])
 
 create_test("PostParserTest", [name("//src", "PostParser"), name("Common")])

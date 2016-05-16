@@ -8,9 +8,11 @@ template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::onRequest(
     std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
   DCHECK(downstream_ != nullptr);
+  if(evb_ == nullptr) {
   evb_ = folly::EventBaseManager::get()->getEventBase();
+  }
   responseBuilder_ = std::make_unique<proxygen::ResponseBuilder>(downstream_);
-  onRequest(HTTPRequest(std::move(headers), folly::IOBuf::create(0)));
+  onRequestReceived(HTTPRequest(std::move(headers), folly::IOBuf::create(0)));
 }
 
 template <typename... HandlerArgs>
