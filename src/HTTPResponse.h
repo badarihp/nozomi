@@ -15,6 +15,9 @@
 
 namespace nozomi {
 
+/**
+ * Represents an HTTP response and body
+ */
 class HTTPResponse {
  private:
   proxygen::HTTPMessage response_;

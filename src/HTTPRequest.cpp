@@ -11,6 +11,7 @@ HTTPRequest::HTTPRequest(std::unique_ptr<proxygen::HTTPMessage> request,
       headers_(HTTPRequest::Headers(request_.get())),
       cookies_(Cookies(request_.get())) {
   DCHECK(request_ != nullptr);
+  DCHECK(body_ != nullptr);
   auto methodAndPath = getMethodAndPath(request_.get());
   method_ = std::get<0>(methodAndPath);
   path_ = std::move(std::get<1>(methodAndPath));
