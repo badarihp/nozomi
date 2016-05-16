@@ -20,17 +20,16 @@ Router::Router(unordered_map<int,
   }
 }
 
-// std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
 RouteMatch Router::getHandler(const proxygen::HTTPMessage* request) const {
   // Check static routes first, then dynamic ones
+  bool methodNotFound = false;
   for (const auto& route : staticRoutes_) {
     auto match = route->handler(request);
     switch (match.result) {
       case (RouteMatchResult::PathNotMatched):
         continue;
       case (RouteMatchResult::MethodNotMatched):
-        return RouteMatch(RouteMatchResult::MethodNotMatched,
-                          getErrorHandler(405));
+        methodNotFound = true;
         break;
       case (RouteMatchResult::RouteMatched):
         return match;
@@ -43,15 +42,18 @@ RouteMatch Router::getHandler(const proxygen::HTTPMessage* request) const {
       case (RouteMatchResult::PathNotMatched):
         continue;
       case (RouteMatchResult::MethodNotMatched):
-        return RouteMatch(RouteMatchResult::MethodNotMatched,
-                          getErrorHandler(405));
+        methodNotFound = true;
         break;
       case (RouteMatchResult::RouteMatched):
         return match;
     }
   }
 
-  return RouteMatch(RouteMatchResult::PathNotMatched, getErrorHandler(404));
+  if (methodNotFound) {
+    return RouteMatch(RouteMatchResult::MethodNotMatched, getErrorHandler(405));
+  } else {
+    return RouteMatch(RouteMatchResult::PathNotMatched, getErrorHandler(404));
+  }
 }
 
 std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>

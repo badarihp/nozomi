@@ -44,7 +44,7 @@ TEST(RouterTest, checks_static_routes_first) {
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::GET);
 
-  auto handler = router.getHandler(&request.getRawRequest());
+  auto handler = router.getHandler(&request.getRawRequest()).handler;
   auto response = handler(std::move(request)).get();
   ASSERT_EQ(201, response.getStatusCode());
   ASSERT_EQ("201 Message", response.getBodyString());
@@ -63,7 +63,7 @@ TEST(RouterTest, returns_405_when_unsupported_method_is_found) {
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::POST);
 
-  auto handler = router.getHandler(&request.getRawRequest());
+  auto handler = router.getHandler(&request.getRawRequest()).handler;
   auto response = handler(std::move(request)).get();
 
   ASSERT_EQ(405, response.getStatusCode());
@@ -82,7 +82,7 @@ TEST(RouterTest, returns_route_when_static_405d_but_regex_route_didnt) {
   Router router({}, std::move(routes));
   auto request = make_request("/1", HTTPMethod::POST);
 
-  auto handler = router.getHandler(&request.getRawRequest());
+  auto handler = router.getHandler(&request.getRawRequest()).handler;
   auto response = handler(std::move(request)).get();
 
   ASSERT_EQ(202, response.getStatusCode());
@@ -115,9 +115,9 @@ TEST(RouterTest, returns_custom_error_handler_when_set) {
   auto request1 = make_request("/1", HTTPMethod::POST);
   auto request2 = make_request("/invalid_path", HTTPMethod::GET);
 
-  auto handler1 = router.getHandler(&request1.getRawRequest());
+  auto handler1 = router.getHandler(&request1.getRawRequest()).handler;
   auto response1 = handler1(std::move(request1)).get();
-  auto handler2 = router.getHandler(&request2.getRawRequest());
+  auto handler2 = router.getHandler(&request2.getRawRequest()).handler;
   auto response2 = handler2(std::move(request2)).get();
 
   ASSERT_EQ(415, response1.getStatusCode());
@@ -152,9 +152,9 @@ TEST(RouterTest, returns_default_error_handler_when_not_set) {
   auto request1 = make_request("/1", HTTPMethod::POST);
   auto request2 = make_request("/invalid_path", HTTPMethod::GET);
 
-  auto handler1 = router.getHandler(&request1.getRawRequest());
+  auto handler1 = router.getHandler(&request1.getRawRequest()).handler;
   auto response1 = handler1(std::move(request1)).get();
-  auto handler2 = router.getHandler(&request2.getRawRequest());
+  auto handler2 = router.getHandler(&request2.getRawRequest()).handler;
   auto response2 = handler2(std::move(request2)).get();
 
   ASSERT_EQ(405, response1.getStatusCode());
@@ -175,7 +175,7 @@ TEST(RouterTest, returns_404_when_route_not_found) {
   Router router({}, std::move(routes));
   auto request = make_request("/invalid_path", HTTPMethod::GET);
 
-  auto handler = router.getHandler(&request.getRawRequest());
+  auto handler = router.getHandler(&request.getRawRequest()).handler;
   auto response = handler(std::move(request)).get();
 
   ASSERT_EQ(404, response.getStatusCode());
@@ -196,11 +196,13 @@ TEST(RouterTest, make_router_works) {
       }));
 
   auto request1 = make_request("/1", HTTPMethod::GET);
-  auto response1 =
-      router.getHandler(&request1.getRawRequest())(std::move(request1)).get();
+  auto response1 = router.getHandler(&request1.getRawRequest())
+                       .handler(std::move(request1))
+                       .get();
   auto request2 = make_request("/3", HTTPMethod::GET);
-  auto response2 =
-      router.getHandler(&request2.getRawRequest())(std::move(request2)).get();
+  auto response2 = router.getHandler(&request2.getRawRequest())
+                       .handler(std::move(request2))
+                       .get();
 
   ASSERT_EQ(201, response1.getStatusCode());
   ASSERT_EQ("201 Message", response1.getBodyString());

@@ -15,6 +15,9 @@
 
 namespace nozomi {
 
+/**
+ * Creates a router that matches based on an HTTP request
+ */
 class Router {
  private:
   std::list<std::unique_ptr<BaseRoute>> staticRoutes_;
@@ -25,16 +28,31 @@ class Router {
       errorRoutes_;
 
  public:
+  /**
+   * Creates a router instance
+   *
+   * @param errorRoutes - A map of error codes -> methods to run when a
+   *                      given error occurs
+   * @param routes - A list of routes to match on
+   */
   Router(std::unordered_map<
              int,
              std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>>
              errorRoutes,
          std::vector<std::unique_ptr<BaseRoute>> routes);
-  //  std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
+
+  /**
+   * Gets the handler for a given HTTP request. If no matching handler
+   * is found, a handler for either a 404 or 405 is returned
+   */
   RouteMatch getHandler(const proxygen::HTTPMessage* request) const;
+
+  /**
+   * Gets an error handler given an error code. If none was provided
+   * to the Router, a default one is returned
+   */
   std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
   getErrorHandler(int statusCode) const;
-  // TODO: Streaming
   // TODO: Option to automatically append a trailing slash
 };
 
