@@ -11,11 +11,12 @@ create_lib("Common", [name("//src", "EnumHash"), name("//src", "HTTPRequest"), n
 create_test("ConfigTest", [name("//src", "Config"), name("Common")])
 create_test("RouteTest", [name("//src", "Route"), name("Common")])
 create_test("StaticRouteTest", [name("//src", "StaticRoute"), name("Common")])
-create_test("HTTPHandlerTest", [name("//src", "HTTPHandler")])
+create_test("HTTPHandlerTest", [name("//src", "HTTPHandler"), name("Common")])
 create_test("HTTPHandlerFactoryTest", [name("//src", "HTTPHandlerFactory"), name("Common")])
 create_test("HTTPRequestTest", [name("//src", "HTTPRequest")])
 create_test("HTTPResponseTest", [name("//src", "HTTPResponse")])
 create_test("RouterTest", [name("//src", "Router")])
 create_test("StreamingHTTPHandlerTest", [name("//src", "StreamingHTTPHandler"), name("Common")])
+create_test("StreamingFileHandlerTest", [name("//src", "StreamingFileHandler"), name("Common")])
 
 create_test("PostParserTest", [name("//src", "PostParser"), name("Common")])

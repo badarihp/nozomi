@@ -8,6 +8,7 @@
 #include "src/StaticRoute.h"
 #include "src/StreamingFileHandler.h"
 
+#include <boost/filesystem.hpp>
 #include <folly/futures/Future.h>
 #include <folly/futures/Future.h>
 #include <gflags/gflags.h>
@@ -35,10 +36,10 @@ int main(int argc, char** argv) {
   int a = 1;
   auto router = make_router(
       {}, make_route("/", {Method::GET}, &SampleController::static_method),
-      //make_streaming_route("/test1", {Method::GET},
-      //                     []() { return new StreamingFileHandler(); }),
-      make_static_route("/route", {Method::GET},
-                        &SampleController::static_method)
+      make_streaming_route("/{{s:.*}}", {Method::GET},
+                           []() { return new StreamingFileHandler("public"); })
+      //make_static_route("/route", {Method::GET},
+      //                  &SampleController::static_method)
       //make_streaming_static_route("/test", {Method::GET},
        //                           []() { return new StreamingFileHandler(); })
       /*
@@ -93,8 +94,9 @@ int main(int argc, char** argv) {
   Server server(config, std::move(router));
   auto started = server.start().get();
   string ignore;
-  cout << "Press enter" << endl;
-  cin >> ignore;
+  while(true) { };
+  //cout << "Press enter" << endl;
+  //cin >> ignore;
   auto stopped = server.stop().get();
   return 0;
 }

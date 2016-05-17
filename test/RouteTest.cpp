@@ -336,8 +336,9 @@ TEST(RouteTest, streaming_handlers_are_called_with_correct_args) {
   // Passing 0 or 1 parameters works well as a regression test
   // to make sure that we don't accidentally introduce logic
   // that relies on an argument being present or absent
-  auto handler1 = std::make_unique<TestStreamingHandler<int64_t>>();
-  auto handler2 = std::make_unique<TestStreamingHandler<>>();
+  folly::EventBase evb;
+  auto handler1 = std::make_unique<TestStreamingHandler<int64_t>>(&evb);
+  auto handler2 = std::make_unique<TestStreamingHandler<>>(&evb);
   auto request1 = make_request("/testing/1", HTTPMethod::GET);
   auto request2 = make_request("/testing/1", HTTPMethod::GET);
 
@@ -346,9 +347,11 @@ TEST(RouteTest, streaming_handlers_are_called_with_correct_args) {
   auto r2 = make_streaming_route("/testing/1", {HTTPMethod::GET},
                                  [&handler2]() { return handler2.get(); });
 
-  r1->handler(&request1.getRawRequest()).streamingHandler();
-  r2->handler(&request2.getRawRequest()).streamingHandler();
+  auto* ret1 = r1->handler(&request1.getRawRequest()).streamingHandler();
+  auto* ret2 = r2->handler(&request2.getRawRequest()).streamingHandler();
 
+  ASSERT_EQ(handler1.get(), ret1);
+  ASSERT_EQ(handler2.get(), ret2);
   ASSERT_TRUE(handler1->setRequestArgsCalled);
   ASSERT_TRUE(handler2->setRequestArgsCalled);
   ASSERT_EQ(1, std::get<0>(handler1->requestArgs));

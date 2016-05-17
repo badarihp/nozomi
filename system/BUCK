@@ -36,7 +36,7 @@ local_lib("folly",
         "-lpthread",
         "-lstdc++",
         "-ldl",
-        "-lunwind",
+        #"-lunwind",
     ],
 
 )

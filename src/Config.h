@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/filesystem.hpp>
 #include <folly/Format.h>
 #include <folly/SocketAddress.h>
 #include <proxygen/httpserver/HTTPServer.h>
@@ -15,7 +16,9 @@ class Config {
  private:
   std::vector<proxygen::HTTPServer::IPConfig> httpAddresses_;
   size_t workerThreads_;
+  boost::filesystem::path publidDir_; //TODO: Getters, setters, and tests
   std::chrono::milliseconds requestTimeout_;
+  size_t fileReaderBufferSize_; //TODO: Getters, setters, and tests
 
   void setHTTPAddresses(
       std::vector<proxygen::HTTPServer::IPConfig> httpAddresses);

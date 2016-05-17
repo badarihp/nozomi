@@ -29,6 +29,12 @@ class StreamingHTTPHandler : public proxygen::RequestHandler {
   bool sentHeaders_ = false;  // TODO: Maybe need to lock around this
 
  public:
+  /**
+   * Creates a StreamingHTTPHandler
+   *
+   * @param evb If provided, the EventBase to run IO operations on.
+   *            If not provided, it will be retreived from the EventBaseManger
+   */
   StreamingHTTPHandler(folly::EventBase* evb = nullptr): evb_(evb){};
   virtual ~StreamingHTTPHandler() noexcept {}
 

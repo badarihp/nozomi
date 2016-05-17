@@ -130,7 +130,8 @@ TEST(StaticRouteTest, static_routes_take_all_callables) {
 }
 
 TEST(StaticRouteTest, static_route_calls_streaming_handler) {
-  auto handler = std::make_unique<TestStreamingHandler<>>();
+  folly::EventBase evb;
+  auto handler = std::make_unique<TestStreamingHandler<>>(&evb);
   auto request = make_request("/testing/1", HTTPMethod::GET);
 
   auto r = make_streaming_static_route("/testing/1", {HTTPMethod::GET},

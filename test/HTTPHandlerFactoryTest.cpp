@@ -69,7 +69,7 @@ TEST(HTTPHandlerFactoryTest, returns_nonstreaming_handler) {
 
 TEST(HTTPHandlerFactoryTest, returns_streaming_handler) {
   EventBase evb;
-  TestStreamingHandler<> streamingHandler;
+  TestStreamingHandler<> streamingHandler(&evb);
   auto router =
       make_router({}, make_streaming_static_route(
                           "/", {HTTPMethod::GET},

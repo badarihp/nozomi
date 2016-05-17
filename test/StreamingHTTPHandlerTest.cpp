@@ -91,5 +91,33 @@ TEST_F(StreamingHTTPHandlerTest, onEOF_sends_EOM) {
   ASSERT_EQ(1, responseHandler.sendEOMCalls);
 } 
 
+TEST_F(StreamingHTTPHandlerTest, sendResponseHeaders_doesnt_send_empty_body) {
+  HTTPResponse response(205);
+  httpHandler.onRequest(std::move(requestMessage));
+  httpHandler.sendResponseHeaders(std::move(response));
+  evb.loop();
+
+  ASSERT_EQ(1, responseHandler.messages.size());
+  ASSERT_EQ(205, responseHandler.messages[0].getStatusCode());
+  ASSERT_EQ(0, responseHandler.bodies.size());
+
+}
+
+TEST_F(StreamingHTTPHandlerTest, sendBody_does_not_send_empty_body) {
+  HTTPResponse response(205, "first part");
+  httpHandler.onRequest(std::move(requestMessage));
+  httpHandler.sendResponseHeaders(std::move(response));
+  httpHandler.sendBody(IOBuf::create(0));
+  httpHandler.sendBody(IOBuf::copyBuffer("test body"));
+  evb.loop();
+
+  ASSERT_EQ(1, responseHandler.messages.size());
+  ASSERT_EQ(2, responseHandler.bodies.size());
+  ASSERT_EQ(205, responseHandler.messages[0].getStatusCode());
+  ASSERT_EQ("first part", to_string(responseHandler.bodies[0]));
+  ASSERT_EQ("test body", to_string(responseHandler.bodies[1]));
+
+}
+
 }
 }

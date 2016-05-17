@@ -84,11 +84,10 @@ struct RegexRouteMatchMaker<HandlerType, true, HandlerArgs...> {
           // TODO: Exception handling to cleanup memory
           decltype(handler()) ret = nullptr;
           try {
-            auto ret = handler();
-            if (ret == nullptr) {
-              return ret;
+            ret = handler();
+            if (ret != nullptr) {
+              call_streaming_handler<HandlerArgs...>(*ret, matches);
             }
-            call_streaming_handler<HandlerArgs...>(*ret, matches);
           } catch (const std::exception& e) {
             // TODO: Logging
             if (ret != nullptr) {

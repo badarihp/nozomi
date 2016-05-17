@@ -3,6 +3,7 @@ common_deps(
     "//system:glog",
     "//system:proxygenlib",
     "//system:wangle",
+    "//system:boost_filesystem",
 )
 
 create_lib("Util", header_only=True)
