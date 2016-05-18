@@ -15,6 +15,9 @@
 
 namespace nozomi {
 
+// TODO: Make this take a config object and use it to create a default file
+// streaming handler
+
 /**
  * Creates a router that matches based on an HTTP request
  */

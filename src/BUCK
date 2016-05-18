@@ -32,6 +32,7 @@ create_lib("StreamingHTTPHandler",
     [
         name("HTTPRequest"),
         name("HTTPResponse"),
+        name("Config"),
     ],
     additional_headers=[
         "StreamingHTTPHandler-inl.h",

@@ -26,7 +26,6 @@ using namespace proxygen;
 namespace nozomi {
 namespace test {
 
-
 struct HTTPHandlerTest : public ::testing::Test {
   function<folly::Future<HTTPResponse>(const HTTPRequest&)> errorHandler;
   function<folly::Future<HTTPResponse>(const HTTPRequest&)> timeoutHandler;

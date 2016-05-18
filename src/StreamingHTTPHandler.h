@@ -35,7 +35,7 @@ class StreamingHTTPHandler : public proxygen::RequestHandler {
    * @param evb If provided, the EventBase to run IO operations on.
    *            If not provided, it will be retreived from the EventBaseManger
    */
-  StreamingHTTPHandler(folly::EventBase* evb = nullptr): evb_(evb){};
+  StreamingHTTPHandler(folly::EventBase* evb = nullptr) : evb_(evb){};
   virtual ~StreamingHTTPHandler() noexcept {}
 
   /**
@@ -69,9 +69,10 @@ class StreamingHTTPHandler : public proxygen::RequestHandler {
    * Called with arguments extracted from the HTTP request in the route parser
    */
   virtual void setRequestArgs(HandlerArgs... args) = 0;
- 
+
   /**
-   * Should be called by the implementation class when response headers are ready
+   * Should be called by the implementation class when response headers are
+   * ready
    * This needs to be called before sendBody()
    */
   void sendResponseHeaders(HTTPResponse response) noexcept;

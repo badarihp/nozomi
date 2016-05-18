@@ -49,7 +49,7 @@ TEST(HTTPHandlerFactoryTest, returns_nonstreaming_handler) {
         return HTTPResponse::future(200, "Sample string");
       }));
   Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1,
-           std::chrono::milliseconds(10000));
+           Optional<string>(), std::chrono::milliseconds(10000));
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
   auto request = make_request("/");
   auto rawRequest = request.getRawRequest();
@@ -76,7 +76,7 @@ TEST(HTTPHandlerFactoryTest, returns_streaming_handler) {
                           [&streamingHandler]() { return &streamingHandler; }));
 
   Config c({make_tuple("::1", 8080, HTTPServer::Protocol::HTTP)}, 1,
-           std::chrono::milliseconds(10000));
+           Optional<string>(), std::chrono::milliseconds(10000));
   HTTPHandlerFactory<CustomHandler> factory(std::move(c), std::move(router));
   auto request = make_request("/");
   auto rawRequest = request.getRawRequest();

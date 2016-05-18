@@ -1,9 +1,11 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <folly/io/IOBuf.h>
 #include <gtest/gtest.h>
@@ -19,6 +21,8 @@
 
 namespace nozomi {
 namespace test {
+
+namespace fs = boost::filesystem;
 
 inline ::testing::AssertionResult assertThrowMsg(
     const char* expr, std::function<::testing::AssertionResult()> f) {
@@ -50,6 +54,25 @@ inline ::testing::AssertionResult assertThrowMsg(
         }                                                                      \
       });
 
+struct TempDir {
+  fs::path tempDir;
+  bool deleteFiles = true;
+  TempDir() {
+    tempDir = fs::temp_directory_path() / fs::unique_path() / fs::unique_path();
+    fs::create_directories(tempDir);
+    LOG(INFO) << "Created temp directory " << tempDir;
+  }
+  virtual ~TempDir() {
+    if (deleteFiles) {
+      LOG(INFO) << "Removing " << tempDir;
+      tempDir.remove_filename();
+      CHECK(tempDir != fs::path("/"));
+      LOG(INFO) << "Removing " << tempDir;
+      fs::remove_all(tempDir);
+    }
+  }
+};
+
 template <typename HeaderType = proxygen::HTTPHeaderCode>
 HTTPRequest make_request(
     std::string path,
@@ -78,9 +101,8 @@ struct TestStreamingHandler : public StreamingHTTPHandler<HandlerArgs...> {
   std::tuple<HandlerArgs...> requestArgs;
   std::unique_ptr<folly::IOBuf> body = folly::IOBuf::create(0);
 
-  TestStreamingHandler(folly::EventBase* evb): StreamingHTTPHandler<HandlerArgs...>(evb) {
-
-  }
+  TestStreamingHandler(folly::EventBase* evb)
+      : StreamingHTTPHandler<HandlerArgs...>(evb) {}
 
   virtual void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override {
     onBodyCalled = true;

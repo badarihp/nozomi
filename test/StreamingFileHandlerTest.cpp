@@ -17,21 +17,6 @@ using folly::IOBuf;
 namespace nozomi {
 namespace test {
 
-struct TempDir {
-  path tempDir;
-  TempDir() {
-    tempDir = fs::temp_directory_path() / fs::unique_path() / fs::unique_path();
-    fs::create_directories(tempDir);
-    LOG(INFO) << "Created temp directory " << tempDir;
-  }
-  virtual ~TempDir() {
-    LOG(INFO) << "Removing " << tempDir << endl;
-    tempDir.remove_filename();
-    LOG(INFO) << "Removing " << tempDir << endl;
-    fs::remove_all(tempDir);
-  }
-};
-
 struct StreamingFileHandlerTest : ::testing::Test {
   TempDir tempDir;
   std::unique_ptr<proxygen::HTTPMessage> requestMessage;
@@ -103,7 +88,12 @@ TEST_F(StreamingFileHandlerTest, returns_404_on_missing_file) {
 }
 
 TEST_F(StreamingFileHandlerTest, returns_404_on_permission_denied) {
-  //TODO: This doesn't work for root, which I'm running as in a docker image
+  // TODO: This doesn't work for root, which I'm running as in a docker image
+  if (getuid() == 0) {
+    LOG(INFO) << "Permission checks don't really apply to root";
+    return;
+  }
+
   auto filename = tempDir.tempDir / "testFile";
   ofstream fout(filename.string());
   fout << "Data!" << endl;

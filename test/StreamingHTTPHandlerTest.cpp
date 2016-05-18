@@ -31,7 +31,8 @@ struct StreamingHTTPHandlerTest : public ::testing::Test {
   TestStreamingHandler<> httpHandler;
   TestResponseHandler responseHandler;
 
-  StreamingHTTPHandlerTest() : httpHandler(&evb), responseHandler(&httpHandler) {
+  StreamingHTTPHandlerTest()
+      : httpHandler(&evb), responseHandler(&httpHandler) {
     requestMessage = std::make_unique<HTTPMessage>();
     requestMessage->getHeaders().set("Content-Type", "text/plain");
     requestMessage->setMethod(proxygen::HTTPMethod::GET);
@@ -42,7 +43,7 @@ struct StreamingHTTPHandlerTest : public ::testing::Test {
 
 TEST_F(StreamingHTTPHandlerTest, onRequest_sends_request) {
   httpHandler.onRequest(std::move(requestMessage));
-  
+
   ASSERT_TRUE(httpHandler.onRequestReceivedCalled);
   ASSERT_EQ("text/plain",
             httpHandler.request.getHeaders().getSingleOrEmpty("Content-Type"));
@@ -72,7 +73,6 @@ TEST_F(StreamingHTTPHandlerTest, sendBody_sends_body_without_EOM) {
   ASSERT_EQ(205, responseHandler.messages[0].getStatusCode());
   ASSERT_EQ("first part", to_string(responseHandler.bodies[0]));
   ASSERT_EQ("test body", to_string(responseHandler.bodies[1]));
-
 }
 
 TEST_F(StreamingHTTPHandlerTest, onEOF_sends_EOM) {
@@ -89,7 +89,7 @@ TEST_F(StreamingHTTPHandlerTest, onEOF_sends_EOM) {
   ASSERT_EQ("first part", to_string(responseHandler.bodies[0]));
   ASSERT_EQ("test body", to_string(responseHandler.bodies[1]));
   ASSERT_EQ(1, responseHandler.sendEOMCalls);
-} 
+}
 
 TEST_F(StreamingHTTPHandlerTest, sendResponseHeaders_doesnt_send_empty_body) {
   HTTPResponse response(205);
@@ -100,7 +100,6 @@ TEST_F(StreamingHTTPHandlerTest, sendResponseHeaders_doesnt_send_empty_body) {
   ASSERT_EQ(1, responseHandler.messages.size());
   ASSERT_EQ(205, responseHandler.messages[0].getStatusCode());
   ASSERT_EQ(0, responseHandler.bodies.size());
-
 }
 
 TEST_F(StreamingHTTPHandlerTest, sendBody_does_not_send_empty_body) {
@@ -116,8 +115,6 @@ TEST_F(StreamingHTTPHandlerTest, sendBody_does_not_send_empty_body) {
   ASSERT_EQ(205, responseHandler.messages[0].getStatusCode());
   ASSERT_EQ("first part", to_string(responseHandler.bodies[0]));
   ASSERT_EQ("test body", to_string(responseHandler.bodies[1]));
-
 }
-
 }
 }
