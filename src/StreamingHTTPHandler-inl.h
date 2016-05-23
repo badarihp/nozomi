@@ -11,19 +11,24 @@ void StreamingHTTPHandler<HandlerArgs...>::onRequest(
   if (evb_ == nullptr) {
     evb_ = folly::EventBaseManager::get()->getEventBase();
   }
+  LOG(INFO) << "StreamingHTTPHandler onRequest";
   responseBuilder_ = std::make_unique<proxygen::ResponseBuilder>(downstream_);
   onRequestReceived(HTTPRequest(std::move(headers), folly::IOBuf::create(0)));
 }
 
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::onUpgrade(
-    proxygen::UpgradeProtocol) noexcept {}
+    proxygen::UpgradeProtocol) noexcept {
+  LOG(INFO) << "StreamingHTTPHandler onUpgrade";
+
+}
 
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::requestComplete() noexcept {
   // TODO: Ensure that we've sent the responses before deleting, this /should/
   // be okay, since requestComplete doesn't get called until the EOF has been
   // sent
+  LOG(INFO) << "StreamingHTTPHandler requestComplete";
   onRequestComplete();
   evb_->runInEventBaseThread([this]() { delete this; });
 }
@@ -31,6 +36,7 @@ void StreamingHTTPHandler<HandlerArgs...>::requestComplete() noexcept {
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::onError(
     proxygen::ProxygenError err) noexcept {
+  LOG(INFO) << "StreamingHTTPHandler onError";
   // TODO: Ensure that we've sent the responses before deleting, this /should/
   // be okay, since requestComplete doesn't get called until the EOF has been
   // sent

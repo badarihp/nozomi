@@ -59,7 +59,7 @@ int main() {
 | `make_route()` | Creates a route based on a pattern to match the request path against, a list of HTTP methods that this route is valid for, and a request handler. The pattern provided will be validated against the number and type of arguments that the request handler accepts. |
 | `make_streaming_route()` | Creates a route as above, only the handler provide should be a method that takes no arguments and returns a heap allocated class instance that implements `nozomi::StreamingHTTPHandler`. |
 | `make_static_route()` | Behaves like `make_route`, except the handler only takes a `const nozomi::HTTPRequest&`, and the pattern is not evaluated as a regular expression. |
-| `make_static_streaming_route()` | Behaves like `make_stremaing_route()`, except setArgs() on the handler should take no args and the pattern is not evaluated as a regular expression. |
+| `make_static_streaming_route()` | Behaves like `make_stremaing_route()`, except setRequestArgs() on the handler should take no args and the pattern is not evaluated as a regular expression. |
 | `StreamingFileHandler` | A streaming handler that takes a base directory, and will return a requested file if it exists in that base directory. The pattern for this handler must extract a string that contains the filename to look for. |
 | `HTTPRequest` | A wrapper around proxygen's `HTTPMessage`. It also includes the message body. See the source for API details. |
 | `HTTPResponse` | A wrapper around proxygen's `HTTPMessage`, but for sending responses. The static method `HTTPResponse::future()` will return a completed future for any of the various constructors that `HTTPResponse` has. |
@@ -76,7 +76,7 @@ route, and returns a `folly::Future<nozomi::HTTPResponse>`.
 
 A streaming request handler is a class that implements
 `nozomi::StreamingHTTPRequestHandler`. It's more useful for large responses
-or if you wanted to stream a client's request body incrementally. `setArgs()` 
+or if you wanted to stream a client's request body incrementally. `setRequestArgs()` 
 must take arguments that match the associated route's pattern (see below).
 
 ## Route Patterns ##

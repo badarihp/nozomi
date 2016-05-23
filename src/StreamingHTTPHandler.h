@@ -92,7 +92,7 @@ class StreamingHTTPHandler : public proxygen::RequestHandler {
   virtual void onError(proxygen::ProxygenError err) noexcept final;
   virtual void onRequest(
       std::unique_ptr<proxygen::HTTPMessage> headers) noexcept final;
-  virtual void onUpgrade(proxygen::UpgradeProtocol prot) noexcept final;
+  virtual void onUpgrade(proxygen::UpgradeProtocol prot) noexcept;
   virtual void requestComplete() noexcept final;
 };
 }

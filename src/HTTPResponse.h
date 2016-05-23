@@ -24,6 +24,9 @@ class HTTPResponse {
   std::unique_ptr<folly::IOBuf> body_;
 
  public:
+  inline proxygen::HTTPMessage& getRawResponse() { return response_; }
+  inline const proxygen::HTTPMessage& getRawResponse() const { return response_; }
+
   HTTPResponse();
   HTTPResponse(int16_t statusCode,
                const folly::dynamic& body,

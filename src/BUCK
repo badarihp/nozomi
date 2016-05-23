@@ -39,6 +39,16 @@ create_lib("StreamingHTTPHandler",
     ],
 )
 
+create_lib("WebsocketHandler",
+    [
+        name("StreamingHTTPHandler"),
+    ],
+    header_only=True,
+    additional_headers=[
+        "WebsocketHandler-inl.h",
+    ],
+)
+
 create_lib("StreamingFileHandler",
     [
         name("StreamingHTTPHandler"),
@@ -117,6 +127,7 @@ create_lib("Server", [
     name("HTTPHandlerFactory"),
     name("PostParser"),
     name("StreamingFileHandler"),
+    name("WebsocketHandler"),
     "//system:proxygenhttpserver",
 ])
 
@@ -133,6 +144,16 @@ cxx_binary(
     name="simple-server",
     srcs=[
         "examples/simple_server.cpp",
+    ],
+    deps=[
+        ":nozomi-lib",
+    ],
+)
+
+cxx_binary(
+    name="websocket-server",
+    srcs=[
+        "examples/websockets/websocket_server.cpp",
     ],
     deps=[
         ":nozomi-lib",
