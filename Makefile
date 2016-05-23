@@ -1,13 +1,16 @@
-.PHONY: build test-all test
+.PHONY: build docs test-all test
 
 build:
-	$(shell buck build src/...)
+	buck build src/...
+
+docs:
+	doxygen
 
 test-all:
-	$(shell buck test --include="integration" src/...)
+	buck test --include="integration" src/...
 
 test:
-	$(shell buck test src/...)
+	buck test src/...
 
 help:
 	@echo "This library is built with buck. (buckbuild.org)"
