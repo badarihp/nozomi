@@ -132,7 +132,7 @@ cxx_library(
 cxx_binary(
     name="simple-server",
     srcs=[
-        "main.cpp",
+        "examples/simple_server.cpp",
     ],
     deps=[
         ":nozomi-lib",

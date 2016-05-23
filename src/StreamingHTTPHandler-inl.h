@@ -17,7 +17,7 @@ void StreamingHTTPHandler<HandlerArgs...>::onRequest(
 
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::onUpgrade(
-    proxygen::UpgradeProtocol prot) noexcept {}
+    proxygen::UpgradeProtocol) noexcept {}
 
 template <typename... HandlerArgs>
 void StreamingHTTPHandler<HandlerArgs...>::requestComplete() noexcept {

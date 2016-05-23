@@ -56,7 +56,7 @@ void HTTPHandler::onBody(unique_ptr<IOBuf> body) noexcept {
   body_->prependChain(std::move(body));
 };
 
-void HTTPHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
+void HTTPHandler::onUpgrade(proxygen::UpgradeProtocol ) noexcept {
     // TODO: Websockets
 };
 
@@ -95,7 +95,7 @@ void HTTPHandler::requestComplete() noexcept {
   delete this;
 };
 
-void HTTPHandler::onError(ProxygenError err) noexcept {
+void HTTPHandler::onError(ProxygenError ) noexcept {
   // Once this is called, no other callbacks will be run, so it's safe to
   // delete here. This is the pattern used in proxygen example code
   delete this;

@@ -9,7 +9,7 @@
 namespace nozomi {
 
 template <typename Container>
-inline void push_back_move(Container& container) {}
+inline void push_back_move(Container&) {}
 
 /**
  * Pushes arguments back onto a container. Useful for functions

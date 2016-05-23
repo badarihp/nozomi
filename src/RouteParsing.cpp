@@ -71,7 +71,7 @@ Replacement route_to_regex(int paramNum,
 template <>
 Replacement route_to_regex<int64_t>(int paramNum,
                                     string originalPattern,
-                                    const string& value,
+                                    const string&,
                                     const string& consumed) {
   return std::make_pair(std::move(originalPattern),
                         sformat(R"((?<__{}>[+-]?\d+))", paramNum));
@@ -80,7 +80,7 @@ Replacement route_to_regex<int64_t>(int paramNum,
 template <>
 Replacement route_to_regex<Optional<int64_t>>(int paramNum,
                                               string originalPattern,
-                                              const string& value,
+                                              const string&,
                                               const string& consumed) {
   return std::make_pair(
       std::move(originalPattern),
@@ -90,8 +90,8 @@ Replacement route_to_regex<Optional<int64_t>>(int paramNum,
 template <>
 Replacement route_to_regex<double>(int paramNum,
                                    string originalPattern,
-                                   const string& value,
-                                   const string& consumed) {
+                                   const string&,
+                                   const string&) {
   return std::make_pair(std::move(originalPattern),
                         sformat(R"((?<__{}>[+-]?\d+(?:\.\d+)?))", paramNum));
 }
@@ -99,7 +99,7 @@ Replacement route_to_regex<double>(int paramNum,
 template <>
 Replacement route_to_regex<Optional<double>>(int paramNum,
                                              string originalPattern,
-                                             const string& value,
+                                             const string&,
                                              const string& consumed) {
   return std::make_pair(
       std::move(originalPattern),
@@ -110,7 +110,7 @@ template <>
 Replacement route_to_regex<string>(int paramNum,
                                    string originalPattern,
                                    const string& value,
-                                   const string& consumed) {
+                                   const string&) {
   // Ensure that the regex provided is valid
   basic_regex<char> re(value, boost::regex::perl);
   return std::make_pair(std::move(originalPattern),

@@ -134,7 +134,7 @@ unordered_map<string, vector<unique_ptr<IOBuf>>> PostParser::parseUrlEncoded(
 }
 
 unordered_map<string, vector<unique_ptr<IOBuf>>> PostParser::parseFormData(
-    const unique_ptr<IOBuf>& body) {
+    const unique_ptr<IOBuf>& ) {
   // TODO: https://tools.ietf.org/html/rfc7578
   return unordered_map<string, vector<unique_ptr<IOBuf>>>();
 }

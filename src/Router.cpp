@@ -60,7 +60,7 @@ std::function<folly::Future<HTTPResponse>(const HTTPRequest&)>
 Router::getErrorHandler(int statusCode) const {
   auto route = errorRoutes_.find(statusCode);
   if (route == errorRoutes_.end()) {
-    return [statusCode](const HTTPRequest& request) {
+    return [statusCode](const HTTPRequest&) {
       return HTTPResponse::future(statusCode);
     };
   } else {

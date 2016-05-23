@@ -50,7 +50,7 @@ void StreamingFileHandler::setRequestArgs(std::string path) noexcept {
   rawPath_ = std::move(path);
 }
 
-void StreamingFileHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
+void StreamingFileHandler::onBody(std::unique_ptr<folly::IOBuf>) noexcept {
   LOG(INFO) << "onBody";
 }
 
@@ -109,7 +109,7 @@ void StreamingFileHandler::onRequestComplete() noexcept {
 }
 
 void StreamingFileHandler::onUnhandledError(
-    proxygen::ProxygenError err) noexcept {
+    proxygen::ProxygenError) noexcept {
   LOG(INFO) << "onUnhandledError";
 }
 }
