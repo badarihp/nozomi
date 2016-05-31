@@ -13,18 +13,18 @@ function connect() {
     log("Connecting");
     connection = new WebSocket("ws://localhost:8080/ws");
     connection.onclose = function(err) { 
-        log('Got close: ' + err);
+        log('Got close: ' + err.reason);
         connection = null;
     }
     connection.onerror = function(err) { 
-        log('Got error: ' + err);
+        log('Got error: ' + err.data);
         connection = null;
     }
     connection.onmessage = function (ev) {
-      log('Got data: ' + ev);
+      log('Got data: ' + ev.data);
     }
     connection.onopen = function(ev) {
-        log('Got open: ' + ev)
+        log('Got open: ' + ev.data)
     }
 }
 

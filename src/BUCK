@@ -14,6 +14,8 @@ create_lib("PostParser", [
     ],
 );
 
+create_lib("WebsocketFrame")
+
 create_lib("HTTPRequest",
     additional_headers=[
         "StringUtils.h",
@@ -42,6 +44,7 @@ create_lib("StreamingHTTPHandler",
 create_lib("WebsocketHandler",
     [
         name("StreamingHTTPHandler"),
+        name("WebsocketFrame"),
     ],
     header_only=True,
     additional_headers=[

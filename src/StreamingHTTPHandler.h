@@ -23,8 +23,9 @@ namespace nozomi {
  */
 template <typename... HandlerArgs>
 class StreamingHTTPHandler : public proxygen::RequestHandler {
- private:
+ protected:
   folly::EventBase* evb_ = nullptr;
+ private:
   std::unique_ptr<proxygen::ResponseBuilder> responseBuilder_;
   bool sentHeaders_ = false;  // TODO: Maybe need to lock around this
 
