@@ -20,6 +20,8 @@ using namespace std;
 using namespace nozomi;
 using Method = proxygen::HTTPMethod;
 
+DEFINE_bool(spin, false, "");
+
 struct EchoHandler: public WebsocketHandler<> {
   void setRequestArgs() noexcept { cout << "Set args" << endl; }
   void onMessage(std::unique_ptr<folly::IOBuf> message) noexcept {
@@ -44,9 +46,12 @@ int main(int argc, char** argv) {
   Server httpServer(std::move(config), std::move(router));
 
   auto started = httpServer.start().get();
-  string ignore;
-  cout << "Press any key to stop" << endl;
-  getchar();
+  if(FLAGS_spin) {
+    while(true) { };
+  } else {
+    cout << "Press any key to stop" << endl;
+    getchar();
+  }
   auto stopped = httpServer.stop().get();
   return 0;
 }

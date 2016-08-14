@@ -1,11 +1,15 @@
 #pragma once
 
 #include "src/StreamingHTTPHandler.h"
+#include "src/WebsocketFrame.h"
 
 namespace nozomi {
 
 template<typename... HandlerArgs>
 class WebsocketHandler: public StreamingHTTPHandler<HandlerArgs...> {
+  private:
+  WebsocketFrameParser parser_;
+  public:
   void closeConnection() noexcept;
   void sendMessage(std::unique_ptr<folly::IOBuf> message) noexcept;
 

@@ -10,12 +10,23 @@ template <typename... HandlerArgs>
 void WebsocketHandler<HandlerArgs...>::onBody(
     std::unique_ptr<folly::IOBuf> body) noexcept {
   LOG(INFO) << "WS onBody";
+  std::unique_ptr<folly::IOBuf> remainder = std::move(body);
+  while(remainder->length()) {
+    LOG(INFO) << "Got buffer with length " << remainder->length();
+    remainder = parser_ << std::move(remainder);
+    auto frame = parser_.getFrame();
+    if(frame) {
+      LOG(INFO) << "Got frame!";
+    } else {
+      LOG(INFO) << "Did not get frame";
+    }
+  };
+  LOG(INFO) << "End of onBody";
 }
 
 template <typename... HandlerArgs>
 void WebsocketHandler<HandlerArgs...>::onEOM() noexcept {
   LOG(INFO) << "WS onEOM ";
-this->downstream_->resumeIngress();
 }
 
 template <typename... HandlerArgs>

@@ -1,32 +1,39 @@
 #pragma once
 
+#include <array>
 #include <memory>
 
 #include <folly/io/IOBuf.h>
 #include <folly/Optional.h>
 
 namespace nozomi {
-/*
 class WebsocketFrame {
  public:
-  enum class OpCode : int32_t {
-    ContinuationFrame = 0x00,
-    TextFrame = 0x01,
-    BinaryFrame = 0x02,
-    ReservedNonControlFrame3 = 0x03,
-    ReservedNonControlFrame4 = 0x04,
-    ReservedNonControlFrame5 = 0x05,
-    ReservedNonControlFrame6 = 0x06,
-    ReservedNonControlFrame7 = 0x07,
-    CloseConnection = 0x08,
-    Ping = 0x09,
-    Pong = 0xA0,
-    ReservedControlFrameB = 0xB0,
-    ReservedControlFrameC = 0xC0,
-    ReservedControlFrameD = 0xD0,
-    ReservedControlFrameE = 0xE0,
-    ReservedControlFrameF = 0xF0,
+  enum class OpCode : int8_t {
+    ContinuationFrame = 0x0,
+    TextFrame = 0x1,
+    BinaryFrame = 0x2,
+    ReservedNonControlFrame3 = 0x3,
+    ReservedNonControlFrame4 = 0x4,
+    ReservedNonControlFrame5 = 0x5,
+    ReservedNonControlFrame6 = 0x6,
+    ReservedNonControlFrame7 = 0x7,
+    CloseConnection = 0x8,
+    Ping = 0x9,
+    Pong = 0xA,
+    ReservedControlFrameB = 0xB,
+    ReservedControlFrameC = 0xC,
+    ReservedControlFrameD = 0xD,
+    ReservedControlFrameE = 0xE,
+    ReservedControlFrameF = 0xF,
   };
+
+  static inline OpCode parseOpCode(int8_t code) {
+    //The 4 bit op code is fully enumerated,
+    //so a static cast from a single byte should
+    //be fine.
+    return static_cast<OpCode>(code & 0x0F);
+  }
 
   enum class Source : bool {
     Client,
@@ -41,7 +48,7 @@ class WebsocketFrame {
   bool rsv3_ = 0;
   OpCode opcode_ = OpCode::ContinuationFrame;
   bool masked_ = false;
-  int32_t maskingKey_ = 0;
+  std::array<int8_t, 4> maskingKey_ = {0,0,0,0};
   std::unique_ptr<folly::IOBuf> payloadData_;
 
  public:
@@ -51,12 +58,8 @@ class WebsocketFrame {
                  bool rsv3,
                  OpCode opcode,
                  bool masked,
-                 int32_t maskingKey,
+                 std::array<int8_t, 4> maskingKey,
                  std::unique_ptr<folly::IOBuf> payloadData);
-  std::unique_ptr<folly::IOBuf> toBinary() const;
-  bool addNextFrame(std::unique_ptr<folly::IOBuf> payloadData);
-  static folly::Optional<WebsocketFrame> parse(
-      std::unique_ptr<folly::IOBuf> rawData, Source source);
 
   inline bool getFin() const noexcept { return fin_; }
   inline bool getRsv1() const noexcept { return rsv1_; }
@@ -64,46 +67,9 @@ class WebsocketFrame {
   inline bool getRsv3() const noexcept { return rsv3_; }
   inline OpCode getOpcode() const noexcept { return opcode_; }
   inline bool getMasked() const noexcept { return masked_; }
-  inline int32_t getMaskingKey() const noexcept { return maskingKey_; }
+  inline const std::array<int8_t, 4>& getMaskingKey() const noexcept { return maskingKey_; }
   inline std::unique_ptr<folly::IOBuf> getPayloadData() const noexcept {
-    return payloadData_;
+    return payloadData_->clone();
   };
 };
-*/
-class WebsocketFrameParser {
-  private:
-    bool fin = false;
-    bool rsv1 = false;
-    bool rsv2 = false;
-    bool rsv3 = false;
-    int32_t opcode = 0;
-    bool masked = false;
-    int8_t maskingKey[4] = {};
-    int64_t payloadLength = 0;
-    int64_t totalOffset = 0;
-    int8_t extraLengthBytes = 0;
-    int8_t extraLengthBuffer[8] = {};
-    bool complete = false;
-    bool error = false;
-
-    std::unique_ptr<folly::IOBuf> payloadData;
-    
-    std::unique_ptr<folly::IOBuf> parseSingleBuffer(std::unique_ptr<folly::IOBuf> data);
-
-  public:
-    WebsocketFrameParser(): payloadData(folly::IOBuf::create(0)) {}
-    operator std::unique_ptr<folly::IOBuf> <<(std::unique_ptr<folly::IOBuf> data);
-    bool isComplete();
-    folly::Optional<WebsocketFrame> getFrame();
-}
-/*
-class WebsocketMessageBuilder {
-  private:
-    std::vector<WebsocketFrame> frames;
-    unique_ptr<folly::IOBuf> message;
-  public:
-  WebsocketMessageBuilder();
-  WebsocketMessageBuilder& addFrame(WebsocketFrame frame); 
-};
-*/
 }
